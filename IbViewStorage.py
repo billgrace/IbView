@@ -11,6 +11,7 @@ import SharedVars
 
 def ReadPreferencesFile():
 	try:
+		# yet another fake change to try to get git savvy sync'd up
 		PreferenceFile = open('preferences.cfg', 'r')
 		LineNumber = 0
 		for Line in PreferenceFile:
