@@ -11,7 +11,6 @@ import SharedVars
 
 def ReadPreferencesFile():
 	try:
-		# a fake comment to provoke a need to stage this file
 		PreferenceFile = open('preferences.cfg', 'r')
 		LineNumber = 0
 		for Line in PreferenceFile:
