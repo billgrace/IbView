@@ -151,6 +151,24 @@ def StringFormatGreek(FloatAmount):
 def StringFormatTimestamp(Timestamp):
 	return '{Hour:02d}:{Minute:02d}:{Second:02d}.{Millisecond:03d}'.format(**Timestamp)
 
+def CompareDates(Date1, Date2):
+	if Date1['year'] < Date2['year']:
+		return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
+	elif Date1['year'] > Date2['year']:
+		return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
+	else:
+		if Date1['month'] < Date2['month']:
+			return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
+		elif Date1['month'] > Date2['month']:
+			return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
+		else:
+			if Date1['day'] < Date2['day']:
+				return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
+			elif Date1['day'] > Date2['day']:
+				return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
+			else:
+				return IbViewEnums.DateComparisonResult['DatesAreEqual']
+
 def LogError(message):
 	ErrorTimestamp = datetime.datetime.now()
 	ErrorTimeString = '{0:%A} {0:%B} {0:%d}, {0:%Y} @ {0:%I:%M%p} '.format(ErrorTimestamp)

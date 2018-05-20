@@ -1,7 +1,7 @@
 import SharedVars
 import IbViewEnums
 
-class ExpirationDateClass(dict):
+class DateClass(dict):
 	def __init__(self):
 	# def __init__(self, *args, **kwargs):
 		self['year'] = 2016
@@ -22,7 +22,7 @@ class OptionCompStructureClass(dict):
 class MonitorDataClass(dict):
 	def __init__(self):
 	# def __init__(self, *args, **kwargs):
-		ed = ExpirationDateClass()
+		ed = DateClass()
 		aoc = OptionCompStructureClass()
 		boc = OptionCompStructureClass()
 		loc = OptionCompStructureClass()
@@ -68,7 +68,7 @@ class ImportedDataFileClass(dict):
 		self['FileRecordList'] = []
 		self['ValidRecordIndexList'] = []
 
-class LogFileDescriptor(dict):
+class DataFileDescriptor(dict):
 	def __init__(self):
 		self['FileName'] = 'PlaceHolder'
 		self['LogHour'] = 6.0
@@ -84,4 +84,18 @@ class LogFileDescriptor(dict):
 		self['QueuedHour'] = 6.0
 		self['QueuedMinute'] = 1.0
 		self['QueuedSecond'] = 1.0
+
+class DayDataDescriptors(dict):
+	def __init__(self):
+		self['DataYear'] = 2018
+		self['DataMonth'] = 1
+		self['DataDay'] = 1
+		self['SixOclockFileDescriptorIndex']
+		self['SevenOclockFileDescriptorIndex']
+		self['EightOclockFileDescriptorIndex']
+		self['NineOclockFileDescriptorIndex']
+		self['TenOclockFileDescriptorIndex']
+		self['ElevenOclockFileDescriptorIndex']
+		self['TwelveOclockFileDescriptorIndex']
+		self['ThirteenOclockFileDescriptorIndex']
 
