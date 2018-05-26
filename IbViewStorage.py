@@ -70,7 +70,6 @@ def GetDataFileDescriptors():
 		else:
 			SharedVars.NumberOfOtherFiles += 1
 			FileDescriptor['FileType'] = 'Other'
-		# SharedVars.ListOfAllDataFileDescriptors.append(FileDescriptor)
 
 def GetUnderlyingDataDates():
 	TestDate = IbViewClasses.DateClass()
@@ -81,6 +80,40 @@ def GetUnderlyingDataDates():
 		TestDate['month'] = FileDescriptor['LogMonth']
 		TestDate['day'] = FileDescriptor['LogDay']
 		if IbViewEnums.DateComparisonResult['FirstIsBeforeSecond'] == IbViewUtilities.CompareDates(TestDate, SharedVars.UnderlyingEarliestDate):
-			SharedVars.UnderlyingEarliestDate = TestDate
+			SharedVars.UnderlyingEarliestDate['month'] = TestDate['month']
+			SharedVars.UnderlyingEarliestDate['day'] = TestDate['day']
+			SharedVars.UnderlyingEarliestDate['year'] = TestDate['year']
 		if IbViewEnums.DateComparisonResult['FirstIsAfterSecond'] == IbViewUtilities.CompareDates(TestDate, SharedVars.UnderlyingLatestDate):
-			SharedVars.UnderlyingLatestDate = TestDate
+			SharedVars.UnderlyingLatestDate['month'] = TestDate['month']
+			SharedVars.UnderlyingLatestDate['day'] = TestDate['day']
+			SharedVars.UnderlyingLatestDate['year'] = TestDate['year']
+
+def GetUnderlyingFilenamesForDate(date):
+	UnderlyingFilesForThisDate = []
+	print(date)
+	print(f'Length of underlying file descriptor list: {len(SharedVars.ListOfUnderlyingDataFileDescriptors)}')
+	for FileDescriptor in SharedVars.ListOfUnderlyingDataFileDescriptors:
+		if FileDescriptor['LogYear'] == date['year'] and \
+				FileDescriptor['LogMonth'] == date['month'] and \
+				FileDescriptor['LogDay'] == date['day']:
+			UnderlyingFilesForThisDate.append(FileDescriptor['FileName'])
+	returnList = sorted(UnderlyingFilesForThisDate)
+	return returnList
+
+def SiftUnderlyingDate(date):
+	OutputFileName = 'SPXprice-' + str(date['year']) + '-' + str(date['month']) + '-' + str(date['day'])
+	OutputFile = open(SharedVars.OutputPath + OutputFileName, 'wt')
+	FilesToSift = GetUnderlyingFilenamesForDate(date)
+	for InputFileName in FilesToSift:
+		CurrentInputFile = open(SharedVars.DataFilePath + '/' + InputFileName, 'rt')
+		for Line in CurrentInputFile:
+			TimeStampString, AvroStringWithByteTags = Line.split('---')
+			AvroString = AvroStringWithByteTags[2:-2]
+			AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
+			AvroByteStream = io.BytesIO(AvroByteArray)
+			reader = avro.datafile.DataFileReader(AvroByteStream, avro.io.DatumReader())
+			for datum in reader:
+				priceString = IbViewUtilities.StringFormatDollars(datum['Last']['Price'])
+			OutputFile.write(TimeStampString + ', ' + priceString)
+		close(CurrentInputFile)
+	close(OutputFile)

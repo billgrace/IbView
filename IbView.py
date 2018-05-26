@@ -11,16 +11,14 @@ def Main():
 	IbViewStorage.ReadPreferencesFile()
 	IbViewStorage.GetDataFileDescriptors()
 	IbViewStorage.GetUnderlyingDataDates()
+
+	FooDate = IbViewClasses.DateClass()
+	FooDate['year'] = SharedVars.ListOfUnderlyingDataFileDescriptors[10]['LogYear']
+	FooDate['month'] = SharedVars.ListOfUnderlyingDataFileDescriptors[10]['LogMonth']
+	FooDate['day'] = SharedVars.ListOfUnderlyingDataFileDescriptors[10]['LogDay']
+	IbViewStorage.SiftUnderlyingDate(FooDate)
+
 	IbViewGui.PrepareGui()
-
-	fromyear = str(SharedVars.UnderlyingEarliestDate['year'])
-	toyear = str(SharedVars.UnderlyingLatestDate['year'])
-	frommonth = str(SharedVars.UnderlyingEarliestDate['month'])
-	tomonth = str(SharedVars.UnderlyingLatestDate['month'])
-	fromday = str(SharedVars.UnderlyingEarliestDate['day'])
-	today = str(SharedVars.UnderlyingLatestDate['day'])
-	IbViewGui.GuiShowDevelopmentMessage(f'{SharedVars.TotalNumberOfDataFilesInDirectory} files, {SharedVars.NumberOfUnderlyingFiles} underlying files, from {frommonth}/{fromday}/{fromyear}/ to {tomonth}/{today}/{toyear}')
-
 	SharedVars.GuiWindow.mainloop()
 
 if __name__ == '__main__':
