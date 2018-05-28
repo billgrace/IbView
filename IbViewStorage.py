@@ -1,3 +1,4 @@
+import sys
 import os
 import io
 import avro.datafile
@@ -102,18 +103,51 @@ def GetUnderlyingFilenamesForDate(date):
 
 def SiftUnderlyingDate(date):
 	OutputFileName = 'SPXprice-' + str(date['year']) + '-' + str(date['month']) + '-' + str(date['day'])
-	OutputFile = open(SharedVars.OutputPath + OutputFileName, 'wt')
+	OutputFile = open(SharedVars.OutputPath + '/' + OutputFileName, 'wt')
 	FilesToSift = GetUnderlyingFilenamesForDate(date)
-	for InputFileName in FilesToSift:
-		CurrentInputFile = open(SharedVars.DataFilePath + '/' + InputFileName, 'rt')
-		for Line in CurrentInputFile:
-			TimeStampString, AvroStringWithByteTags = Line.split('---')
-			AvroString = AvroStringWithByteTags[2:-2]
-			AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
-			AvroByteStream = io.BytesIO(AvroByteArray)
+
+
+
+	InputFileName = FilesToSift[0]
+	CurrentInputFile = open(SharedVars.DataFilePath + '/' + InputFileName, 'rt')
+	OutputCaptureFile = open('/home/bill/SiftedData/PythonCapture.txt', 'wt')
+	LineNumber = 0
+	for Line in CurrentInputFile:
+		LineNumber += 1
+		TimeStampString, AvroStringWithByteTags = Line.split('---')
+		AvroString = AvroStringWithByteTags[2:-2]
+		AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
+		AvroByteStream = io.BytesIO(AvroByteArray)
+		# if LineNumber == 84 or LineNumber == 104 or LineNumber == 114:
+		if False:
+			print('!!!###*** Line: ' + str(LineNumber), file=OutputCaptureFile)
+			print(TimeStampString, file=OutputCaptureFile)
+			print(AvroString, file=OutputCaptureFile)
+			print(AvroByteArray, file=OutputCaptureFile)
+		else:
 			reader = avro.datafile.DataFileReader(AvroByteStream, avro.io.DatumReader())
 			for datum in reader:
-				priceString = IbViewUtilities.StringFormatDollars(datum['Last']['Price'])
-			OutputFile.write(TimeStampString + ', ' + priceString)
-		close(CurrentInputFile)
-	close(OutputFile)
+				print('Line: ' + str(LineNumber) + ' at time ' + TimeStampString + ' has price at: ' + str(datum['Last']['Price']), file=OutputCaptureFile)
+			reader.close()
+		AvroByteStream.close()
+	OutputCaptureFile.close()
+	CurrentInputFile.close()
+
+
+
+
+	# for InputFileName in FilesToSift:
+	# 	CurrentInputFile = open(SharedVars.DataFilePath + '/' + InputFileName, 'rt')
+	# 	for Line in CurrentInputFile:
+	# 		TimeStampString, AvroStringWithByteTags = Line.split('---')
+	# 		AvroString = AvroStringWithByteTags[2:-2]
+	# 		AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
+	# 		AvroByteStream = io.BytesIO(AvroByteArray)
+	# 		reader = avro.datafile.DataFileReader(AvroByteStream, avro.io.DatumReader())
+	# 		for datum in reader:
+	# 			priceString = IbViewUtilities.StringFormatDollars(datum['Last']['Price'])
+	# 		reader.close()
+	# 		AvroByteStream.close()
+	# 		OutputFile.write(TimeStampString + ', ' + priceString + '\n')
+	# 	CurrentInputFile.close()
+	# OutputFile.close()
