@@ -7,8 +7,6 @@ import IbViewStorage
 import IbViewGui
 import IbViewUtilities
 
-#a fake change to this file.
-
 def Main():
 	IbViewStorage.ReadPreferencesFile()
 	IbViewStorage.GetDataFileDescriptors()
