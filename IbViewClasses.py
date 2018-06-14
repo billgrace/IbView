@@ -75,7 +75,7 @@ class DataFileDescriptor(dict):
 		self['LogDay'] = 1
 		self['LogMonth'] = 1
 		self['LogYear'] = 2018
-		self['FileType'] = 'Underlying'
+		self['FileType'] = 'UnderlyingAvro'
 		self['StrikePrice'] = 2000
 		self['ExpirationYear'] = 2018
 		self['ExpirationMonth'] = 1

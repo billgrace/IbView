@@ -15,86 +15,68 @@ def DecodeStringToBytes(String):
 		CharValue = Char
 		CharNumber += 1
 		if DecodeCounter == 0:
-			# we're not currently in the process of converting 4 chars to a byte
-			if Char == '\\':
-				# this char is the beginning of a 4-char set
+			# DecodeCounter == 0 means we're not currently processing an escape sequence
+			if ord(Char) == 92:
+				# This character is a backslash so it's potentially the start of an escape sequence
 				DecodeCounter = 1
 				DecodeValue = 0
 			else:
-				# this char is just another char so add it to the byte array
+				# this char is just a printable ASCII char so add it to the byte array
 				ReturnBytes.append(ord(Char))
-		else:
-			if DecodeCounter == 1:
-				# This is the character following a backslash
-				if Char == 'x' or Char == 'X':
-					# it's the x of '\xnn' so ignore it and move on to collect the two hex digits following
-					DecodeCounter = 2
-				elif Char == 'a' or Char == 'A':
-					# it's the a of a 'Bell' ('\a') so declare an ASCII BEL byte
-					ReturnBytes.append(7)
-					DecodeCounter = 0
-				elif Char == 'b' or Char == 'B':
-					# it's the b of a backspace ('\b') so declare an ASCII BS byte
-					ReturnBytes.append(8)
-					DecodeCounter = 0
-				elif Char == 't' or Char == 'T':
-					# it's the t of a tab ('\t') so declare an ASCII TAB byte
-					ReturnBytes.append(9)
-					DecodeCounter = 0
-				elif Char == 'n' or Char == 'N':
-					# it's the n of a newline ('\n') so declare an ASCII LF byte
-					ReturnBytes.append(10)
-					DecodeCounter = 0
-				elif Char == 'v' or Char == 'V':
-					# it's the v of a vertical tab ('\v') so declare an ASCII VT byte
-					ReturnBytes.append(11)
-					DecodeCounter = 0
-				elif Char == 'f' or Char == 'F':
-					# it's the f of a form feed ('\f') so declare an ASCII FF byte
-					ReturnBytes.append(12)
-					DecodeCounter = 0
-				elif Char == 'r' or Char == 'R':
-					# it's the r of a carriage return ('\r') so declare an ASCII CR byte
-					ReturnBytes.append(13)
-					DecodeCounter = 0
-				elif Char == '"':
-					# it's the double quote of an escaped double quote so declare an ASCII double quote character code byte
-					ReturnBytes.append(34)
-					DecodeCounter = 0
-				elif Char == '\'':
-					# it's the single quote of an escaped single quote so declare an ASCII single quote character code byte
-					ReturnBytes.append(39)
-					DecodeCounter = 0
-				elif Char == '\\':
-					# it's the second backslash of an escaped backslash character so declare an ASCII backslash byte
-					# Yikes!!! Apparently the initial/original avro/WindowsPython encoding does
-					# NOT escape a lone backslash character, SOOoooo....
-					# ... a second backslash means the first one was just an ASCII backslash
-					# character and this second one is perhaps the start of an escaped sequence.
-					# ReturnBytes.append(92)
-					# DecodeCounter = 0
-					ReturnBytes.append(ord('\\'))
-					DecodeCounter = 1
-				else:
-					# #else we got a not-yet-known escaped sequence so
-					# print('\nGot {0} after a backslash'.format(Char))
-					# ReturnBytes.append(ord('\\'))
-					# ReturnBytes.append(ord(Char))
-					# DecodeCounter = 0
-					#... this character isn't known as an escape sequence's 2nd character so
-					#    assume the preceding backslash was simply a backslash
-					ReturnBytes.append(ord('\\'))
-					ReturnBytes.append(ord(Char))
-					DecodeCounter = 0
-			elif DecodeCounter == 2:
-				# this char is the MSB of the encoded value
-				DecodeValue = 16 * IntegerHexValue(Char)
-				DecodeCounter = 3
-			else:
-				# this char is the LSB of the encoded value
-				DecodeValue += IntegerHexValue(Char)
-				ReturnBytes.append(DecodeValue)
+		elif DecodeCounter == 1:
+			# DecodeCounter == 1 means
+			# this is the character following a backslash....
+			# Is it an escaped ASCII control code??
+			if ord(Char) == 120:
+				# it's the x of '\xnn' so ignore it and move on to collect the two hex digits following
+				DecodeCounter = 2
+			elif ord(Char) == 97:
+				# it's the a of a 'Bell' ('\a') so declare an ASCII BEL byte
+				ReturnBytes.append(7)
 				DecodeCounter = 0
+			elif ord(Char) == 98:
+				# it's the b of a backspace ('\b') so declare an ASCII BS byte
+				ReturnBytes.append(8)
+				DecodeCounter = 0
+			elif ord(Char) == 116:
+				# it's the t of a tab ('\t') so declare an ASCII TAB byte
+				ReturnBytes.append(9)
+				DecodeCounter = 0
+			elif ord(Char) == 110:
+				# it's the n of a newline ('\n') so declare an ASCII LF byte
+				ReturnBytes.append(10)
+				DecodeCounter = 0
+			elif ord(Char) == 118:
+				# it's the v of a vertical tab ('\v') so declare an ASCII VT byte
+				ReturnBytes.append(11)
+				DecodeCounter = 0
+			elif ord(Char) == 102:
+				# it's the f of a form feed ('\f') so declare an ASCII FF byte
+				ReturnBytes.append(12)
+				DecodeCounter = 0
+			elif ord(Char) == 114:
+				# it's the r of a carriage return ('\r') so declare an ASCII CR byte
+				ReturnBytes.append(13)
+				DecodeCounter = 0
+			elif ord(Char) == 92:
+				# it's another backslash so the first one is just a backslash character and we
+				# shift our possible-escape-sequence processing to this second one
+				ReturnBytes.append(92)
+				DecodeCounter = 1
+			else:
+				# it's not one of our escape sequences so it must be just a backslash followed by some other character
+				ReturnBytes.append(92)
+				ReturnBytes.append(ord(Char))
+				DecodeCounter = 0
+		elif DecodeCounter == 2:
+			# this char is the MSB of the encoded value
+			DecodeValue = 16 * IntegerHexValue(Char)
+			DecodeCounter = 3
+		else:
+			# this char is the LSB of the encoded value
+			DecodeValue += IntegerHexValue(Char)
+			ReturnBytes.append(DecodeValue)
+			DecodeCounter = 0
 	if DecodeCounter == 1:
 		# This string ends with a backslash so add it to the byte array equivalent we've built
 		ReturnBytes.append(ord('\\'))

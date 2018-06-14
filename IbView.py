@@ -17,9 +17,9 @@ def Main():
 	# FooDate['month'] = SharedVars.ListOfUnderlyingDataFileDescriptors[10]['LogMonth']
 	# FooDate['day'] = SharedVars.ListOfUnderlyingDataFileDescriptors[10]['LogDay']
 	FooDate['year'] = 2018
-	FooDate['month'] = 5
-	FooDate['day'] = 9
-	IbViewStorage.SiftUnderlyingDate(FooDate)
+	FooDate['month'] = 6
+	FooDate['day'] = 11
+	IbViewStorage.SiftUnderlyingAvroDate(FooDate)
 
 	IbViewGui.PrepareGui()
 	SharedVars.GuiWindow.mainloop()

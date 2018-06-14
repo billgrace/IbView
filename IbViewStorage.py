@@ -41,9 +41,32 @@ def GetDataFileDescriptors():
 		FileDescriptor = IbViewClasses.DataFileDescriptor()
 		FileName = SharedVars.DataFileDirectoryList[CurrentIndex]
 		FileDescriptor['FileName'] = FileName
-		if FileName[0:3] == 'SPX':
-			SharedVars.NumberOfOptionFiles += 1
-			FileDescriptor['FileType'] = 'Option'
+		if FileName[11:25] == 'JsonUnderlying':
+			SharedVars.NumberOfUnderlyingJsonFiles += 1
+			FileDescriptor['FileType'] = 'UnderlyingJson'
+			SharedVars.ListOfUnderlyingJsonDataFileDescriptors.append(FileDescriptor)
+		elif FileName[11:21] == 'Underlying':
+			SharedVars.NumberOfUnderlyingAvroFiles += 1
+			FileDescriptor['FileType'] = 'UnderlyingAvro'
+			SharedVars.ListOfUnderlyingAvroDataFileDescriptors.append(FileDescriptor)
+		elif FileName[0:8] == 'SPX-Json':
+			SharedVars.NumberOfOptionJsonFiles += 1
+			FileDescriptor['FileType'] = 'OptionJson'
+			FileDescriptor['StrikePrice'] = int(FileName[20:24])
+			FileDescriptor['ExpirationYear'] = int(FileName[9:13])
+			FileDescriptor['ExpirationMonth'] = int(FileName[14:16])
+			FileDescriptor['ExpirationDay'] = int(FileName[17:19])
+			if FileName[25] == 'P':
+				FileDescriptor['ContractRight'] = 'PUT'
+			else:
+				FileDescriptor['ContractRight'] = 'CALL'
+			FileDescriptor['QueuedHour'] = int(FileName[-25:-23])
+			FileDescriptor['QueuedMinute'] = int(FileName[-22:-20])
+			FileDescriptor['QueuedSecond'] = int(FileName[-19:-17])
+			SharedVars.ListOfOptionJsonDataFileDescriptors.append(FileDescriptor)
+		elif FileName[0:3] == 'SPX':
+			SharedVars.NumberOfOptionAvroFiles += 1
+			FileDescriptor['FileType'] = 'OptionAvro'
 			FileDescriptor['StrikePrice'] = int(FileName[15:19])
 			FileDescriptor['ExpirationYear'] = int(FileName[4:8])
 			FileDescriptor['ExpirationMonth'] = int(FileName[9:11])
@@ -55,28 +78,21 @@ def GetDataFileDescriptors():
 			FileDescriptor['QueuedHour'] = int(FileName[-25:-23])
 			FileDescriptor['QueuedMinute'] = int(FileName[-22:-20])
 			FileDescriptor['QueuedSecond'] = int(FileName[-19:-17])
-			FileDescriptor['LogYear'] = int(FileName[-17:-13])
-			FileDescriptor['LogMonth'] = int(FileName[-13:-11])
-			FileDescriptor['LogDay'] = int(FileName[-11:-9])
-			FileDescriptor['LogHour'] = float(FileName[-8:-4])
-			SharedVars.ListOfOptionDataFileDescriptors.append(FileDescriptor)
-		elif FileName[11:21] == 'Underlying':
-			SharedVars.NumberOfUnderlyingFiles += 1
-			FileDescriptor['FileType'] = 'Underlying'
-			FileDescriptor['LogYear'] = int(FileName[-17:-13])
-			FileDescriptor['LogMonth'] = int(FileName[-13:-11])
-			FileDescriptor['LogDay'] = int(FileName[-11:-9])
-			FileDescriptor['LogHour'] = float(FileName[-8:-4])
-			SharedVars.ListOfUnderlyingDataFileDescriptors.append(FileDescriptor)
+			SharedVars.ListOfOptionAvroDataFileDescriptors.append(FileDescriptor)
 		else:
 			SharedVars.NumberOfOtherFiles += 1
 			FileDescriptor['FileType'] = 'Other'
+			continue
+		FileDescriptor['LogYear'] = int(FileName[-17:-13])
+		FileDescriptor['LogMonth'] = int(FileName[-13:-11])
+		FileDescriptor['LogDay'] = int(FileName[-11:-9])
+		FileDescriptor['LogHour'] = float(FileName[-8:-4])
 
 def GetUnderlyingDataDates():
 	TestDate = IbViewClasses.DateClass()
 	SharedVars.UnderlyingEarliestDate['year'] = 9999
 	SharedVars.UnderlyingLatestDate['year'] = 0
-	for FileDescriptor in SharedVars.ListOfUnderlyingDataFileDescriptors:
+	for FileDescriptor in SharedVars.ListOfUnderlyingAvroDataFileDescriptors:
 		TestDate['year'] = FileDescriptor['LogYear']
 		TestDate['month'] = FileDescriptor['LogMonth']
 		TestDate['day'] = FileDescriptor['LogDay']
@@ -89,25 +105,22 @@ def GetUnderlyingDataDates():
 			SharedVars.UnderlyingLatestDate['day'] = TestDate['day']
 			SharedVars.UnderlyingLatestDate['year'] = TestDate['year']
 
-def GetUnderlyingFilenamesForDate(date):
-	UnderlyingFilesForThisDate = []
+def GetUnderlyingAvroFilenamesForDate(date):
+	UnderlyingAvroFilesForThisDate = []
 	print(date)
-	print(f'Length of underlying file descriptor list: {len(SharedVars.ListOfUnderlyingDataFileDescriptors)}')
-	for FileDescriptor in SharedVars.ListOfUnderlyingDataFileDescriptors:
+	print(f'Length of underlying file descriptor list: {len(SharedVars.ListOfUnderlyingAvroDataFileDescriptors)}')
+	for FileDescriptor in SharedVars.ListOfUnderlyingAvroDataFileDescriptors:
 		if FileDescriptor['LogYear'] == date['year'] and \
 				FileDescriptor['LogMonth'] == date['month'] and \
 				FileDescriptor['LogDay'] == date['day']:
-			UnderlyingFilesForThisDate.append(FileDescriptor['FileName'])
-	returnList = sorted(UnderlyingFilesForThisDate)
+			UnderlyingAvroFilesForThisDate.append(FileDescriptor['FileName'])
+	returnList = sorted(UnderlyingAvroFilesForThisDate)
 	return returnList
 
-def SiftUnderlyingDate(date):
+def SiftUnderlyingAvroDate(date):
 	OutputFileName = 'SPXprice-' + str(date['year']) + '-' + str(date['month']) + '-' + str(date['day'])
 	OutputFile = open(SharedVars.OutputPath + '/' + OutputFileName, 'wt')
-	FilesToSift = GetUnderlyingFilenamesForDate(date)
-
-
-
+	FilesToSift = GetUnderlyingAvroFilenamesForDate(date)
 	InputFileName = FilesToSift[0]
 	CurrentInputFile = open(SharedVars.DataFilePath + '/' + InputFileName, 'rt')
 	OutputCaptureFile = open('/home/bill/SiftedData/PythonCapture.txt', 'wt')
@@ -118,22 +131,23 @@ def SiftUnderlyingDate(date):
 		AvroString = AvroStringWithByteTags[2:-2]
 		AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
 		AvroByteStream = io.BytesIO(AvroByteArray)
-		# if LineNumber == 84 or LineNumber == 104 or LineNumber == 114:
-		if False:
-			print('!!!###*** Line: ' + str(LineNumber), file=OutputCaptureFile)
-			print(TimeStampString, file=OutputCaptureFile)
-			print(AvroString, file=OutputCaptureFile)
-			print(AvroByteArray, file=OutputCaptureFile)
-		else:
+		# if False:
+		# 	print('!!!###*** Line: ' + str(LineNumber), file=OutputCaptureFile)
+		# 	print(TimeStampString, file=OutputCaptureFile)
+		# 	print(AvroString, file=OutputCaptureFile)
+		# 	print(AvroByteArray, file=OutputCaptureFile)
+		# else:
+		try:
 			reader = avro.datafile.DataFileReader(AvroByteStream, avro.io.DatumReader())
 			for datum in reader:
 				print('Line: ' + str(LineNumber) + ' at time ' + TimeStampString + ' has price at: ' + str(datum['Last']['Price']), file=OutputCaptureFile)
 			reader.close()
+		except Exception as e:
+			print(f'Exception, line # {str(LineNumber)}: {str(e)}')
 		AvroByteStream.close()
 	OutputCaptureFile.close()
 	CurrentInputFile.close()
-
-
+	OutputFile.close()
 
 
 	# for InputFileName in FilesToSift:
