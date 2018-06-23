@@ -17,6 +17,94 @@ def DecodeStringToBytes(String):
 		if DecodeCounter == 0:
 			# DecodeCounter == 0 means we're not currently processing an escape sequence
 			if ord(Char) == 92:
+				# This character is a backslash so it's the start of an escape sequence
+				DecodeCounter = 1
+				DecodeValue = 0
+			else:
+				# this char is just a printable ASCII char so add it to the byte array
+				ReturnBytes.append(ord(Char))
+		elif DecodeCounter == 1:
+			# DecodeCounter == 1 means
+			# this is the character following a backslash....
+			# Is it an escaped binary value??
+			if ord(Char) == 120:
+				# it's the x of '\xnn' so ignore it and move on to collect the two hex digits following
+				DecodeCounter = 2
+			# Is it an escaped ASCII control code??
+			elif ord(Char) == 97:
+				# it's the a of a 'Bell' ('\a') so declare an ASCII BEL byte
+				ReturnBytes.append(7)
+				DecodeCounter = 0
+			elif ord(Char) == 98:
+				# it's the b of a backspace ('\b') so declare an ASCII BS byte
+				ReturnBytes.append(8)
+				DecodeCounter = 0
+			elif ord(Char) == 116:
+				# it's the t of a tab ('\t') so declare an ASCII TAB byte
+				ReturnBytes.append(9)
+				DecodeCounter = 0
+			elif ord(Char) == 110:
+				# it's the n of a newline ('\n') so declare an ASCII LF byte
+				ReturnBytes.append(10)
+				DecodeCounter = 0
+			elif ord(Char) == 118:
+				# it's the v of a vertical tab ('\v') so declare an ASCII VT byte
+				ReturnBytes.append(11)
+				DecodeCounter = 0
+			elif ord(Char) == 102:
+				# it's the f of a form feed ('\f') so declare an ASCII FF byte
+				ReturnBytes.append(12)
+				DecodeCounter = 0
+			elif ord(Char) == 114:
+				# it's the r of a carriage return ('\r') so declare an ASCII CR byte
+				ReturnBytes.append(13)
+				DecodeCounter = 0
+			# Is it an escaped quote or backslash??
+			elif ord(Char) == 34:
+				# it's a double quote
+				ReturnBytes.append(34)
+				DecodeCounter = 0
+			elif ord(Char) == 39:
+				# it's a single quote
+				ReturnBytes.append(39)
+				DecodeCounter = 0
+			elif ord(Char) == 92:
+				# it's a second backslash so the two of them amount to an original backslash byte
+				ReturnBytes.append(92)
+				DecodeCounter = 0
+			else:
+				# There shouldn't be any other character following a backslash.
+				print(f'Bad escape sequence: backslash {Char}')
+				ReturnBytes.append(92)
+				ReturnBytes.append(ord(Char))
+				DecodeCounter = 0
+		elif DecodeCounter == 2:
+			# this char is the MSB of the encoded value
+			DecodeValue = 16 * IntegerHexValue(Char)
+			DecodeCounter = 3
+		else:
+			# this char is the LSB of the encoded value
+			DecodeValue += IntegerHexValue(Char)
+			ReturnBytes.append(DecodeValue)
+			DecodeCounter = 0
+	if DecodeCounter == 1:
+		# There should never be a backslash as the last character....
+		print('There was an un-accompanied backslash at the end of the string.')
+	return ReturnBytes
+
+# This version does as good a job as I can manage for the poorly-encoded data before June 15, 2018
+def DecodeStringToBytesPreJune15_2018(String):
+	ReturnBytes = bytearray()
+	DecodeCounter = 0
+	DecodeValue = 0
+	CharNumber = 0
+	CharValue = 0
+	for Char in String:
+		CharValue = Char
+		CharNumber += 1
+		if DecodeCounter == 0:
+			# DecodeCounter == 0 means we're not currently processing an escape sequence
+			if ord(Char) == 92:
 				# This character is a backslash so it's potentially the start of an escape sequence
 				DecodeCounter = 1
 				DecodeValue = 0
@@ -127,6 +215,8 @@ def IntegerHexValue(Char):
 		return 14
 	elif Char == 'F':
 		return 15
+	else:
+		return -1
 
 def StringFormatDollars(FloatAmount):
 	if FloatAmount > 999999999999.0:
