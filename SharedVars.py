@@ -8,7 +8,7 @@ import IbViewGui
 
 # Preferences file items
 DataFilePath = ''
-OutputPath = ''
+SiftedDataPath = ''
 DataFileDirectoryList = []
 ListOfAllDataFileDescriptors = []
 ListOfUnderlyingJsonDataFileDescriptors = []

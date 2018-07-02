@@ -1,3 +1,4 @@
+import os
 import datetime
 import SharedVars
 import IbViewEnums
@@ -259,3 +260,51 @@ def LogError(message):
 	FormattedErrorString = ErrorTimeString + message
 	IbViewGui.GuiShowDevelopmentMessage(FormattedErrorString)
 	print(FormattedErrorString)
+
+TradingDates2018 = []
+SpxExpirationDates2018 = []
+TradingDates2018.append("zero place holder since datetime.month returns 1-12")
+TradingDates2018.append("2,3,4,5,8,9,10,11,12,16,17,18,19,22,23,24,25,26,29,30,31")
+TradingDates2018.append("1,2,5,6,7,8,9,12,13,14,15,16,19,20,21,22,23,26,27,28")
+TradingDates2018.append("1,2,5,6,7,8,9,12,13,14,15,16,19,20,21,22,23,26,27,28,29")
+TradingDates2018.append("2,3,4,5,6,9,10,11,12,13,16,17,18,19,20,23,24,25,26,27,30")
+TradingDates2018.append("1,2,3,4,7,8,9,10,11,14,15,16,17,18,21,22,23,24,25,29,30,31")
+TradingDates2018.append("1,4,5,6,7,8,11,12,13,14,15,18,19,20,21,22,25,26,27,28,29")
+TradingDates2018.append("2,3,5,6,9,10,11,12,13,16,17,18,19,20,23,24,25,26,27,30,31")
+TradingDates2018.append("1,2,3,6,7,8,9,10,13,14,15,16,17,20,21,22,23,24,27,28,29,30,31")
+TradingDates2018.append("4,5,6,7,10,11,12,13,14,17,18,19,20,21,24,25,26,27,28")
+TradingDates2018.append("1,2,3,4,5,8,9,10,11,12,15,16,17,18,19,22,23,24,25,26,29,30,31")
+TradingDates2018.append("1,2,5,6,7,8,9,12,13,14,15,16,19,20,21,23,26,27,28,29,30")
+TradingDates2018.append("3,4,5,6,7,10,11,12,13,14,17,18,19,20,21,24,26,27,28,31")
+SpxExpirationDates2018.append("zero place holder since datetime.month returns 1-12")
+SpxExpirationDates2018.append("3,5,8,10,12,17,19,22,24,26,29,31")
+SpxExpirationDates2018.append("2,5,7,9,12,14,16,21,23,26,28")
+SpxExpirationDates2018.append("2,5,7,9,12,14,16,19,21,23,26,28")
+SpxExpirationDates2018.append("2,4,6,9,11,13,16,18,29,23,25,27,30")
+SpxExpirationDates2018.append("2,4,7,9,11,14,16,18,21,23,25,30")
+SpxExpirationDates2018.append("1,4,6,8,11,13,15,18,20,22,25,27,29")
+SpxExpirationDates2018.append("2,6,9,11,13,16,18,20,23,255,27,30")
+SpxExpirationDates2018.append("1,3,6,8,10,13,15,17,20,22,24,27,29,31")
+SpxExpirationDates2018.append("5,7,10,12,14,17,19,21,24,26,28")
+SpxExpirationDates2018.append("1,3,5,8,10,12,15,17,19,22,24,26,29,31")
+SpxExpirationDates2018.append("2,5,7,9,12,14,16,19,21,23,26,28,30")
+SpxExpirationDates2018.append("3,5,7,10,12,14,17,19,21,24,26,28,31")
+def DateIsATradingDay(date):
+    returnValue = False
+    stringArrayIndex = date['month']
+    todayDayInteger = date['day']
+    dayStrings = TradingDates2018[stringArrayIndex].split(',')
+    for dayString in dayStrings:
+        if (todayDayInteger == int(dayString)):
+            returnValue = True
+            break
+    return returnValue
+def DateIsAlreadySifted(date):
+    returnValue = False
+    FileNameDateFormat = f"{date['year']}-{date['month']}-{date['day']}"
+    SiftedDataFileDirectoryList = os.listdir(SharedVars.SiftedDataPath)
+    for SiftedDataFileName in SiftedDataFileDirectoryList:
+        if FileNameDateFormat == SiftedDataFileName[-9:]:
+            returnValue = True
+            break
+    return returnValue

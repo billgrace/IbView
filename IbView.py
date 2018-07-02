@@ -1,5 +1,6 @@
 #!/home/bill/anaconda3/bin/python
 import sys
+import os
 import datetime
 import SharedVars
 import IbViewEnums
@@ -22,11 +23,17 @@ def Main():
 	SiftDate = FirstValidDataDate
 	SiftDateStructure = IbViewClasses.DateClass()
 	while SiftDate <= LastValidDataDate:
-		print(SiftDate)
 		SiftDateStructure['year'] = SiftDate.year
 		SiftDateStructure['month'] = SiftDate.month
 		SiftDateStructure['day'] = SiftDate.day
-		IbViewStorage.SiftUnderlyingAvroDate(SiftDateStructure)
+		if IbViewUtilities.DateIsATradingDay(SiftDateStructure):
+			if IbViewUtilities.DateIsAlreadySifted(SiftDateStructure):
+				print(f'{SiftDateStructure} has already been sifted')
+			else:
+				print(f'Sifting {SiftDateStructure}')
+				IbViewStorage.SiftUnderlyingAvroDate(SiftDateStructure)
+		else:
+			print(f'{SiftDateStructure} is not a trading day')
 		SiftDate += datetime.timedelta(days=1)
 
 	IbViewGui.PrepareGui()

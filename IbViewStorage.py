@@ -25,8 +25,8 @@ def ReadPreferencesFile():
 				KeyValue = UnstrippedKeyValue.strip()
 				if(KeyWord == 'DataFilePath'):
 					SharedVars.DataFilePath = KeyValue
-				elif(KeyWord == 'OutputPath'):
-					SharedVars.OutputPath = KeyValue
+				elif(KeyWord == 'SiftedDataPath'):
+					SharedVars.SiftedDataPath = KeyValue
 				else:
 					IbViewUtilities.LogError('unrecognized preference.cfg KeyWord: ' + KeyWord + ' on line #' + str(LineNumber))
 			except Exception as e:
@@ -127,7 +127,7 @@ def GetUnderlyingAvroFilenamesForDate(date):
 
 def SiftUnderlyingAvroDate(date):
 	OutputFileName = 'SPXprice-' + str(date['year']) + '-' + str(date['month']) + '-' + str(date['day'])
-	OutputFile = open(SharedVars.OutputPath + '/' + OutputFileName, 'wt')
+	OutputFile = open(SharedVars.SiftedDataPath + '/' + OutputFileName, 'wt')
 	JsonFilesToSift = GetUnderlyingJsonFilenamesForDate(date)
 	AvroFilesToSift = GetUnderlyingAvroFilenamesForDate(date)
 	FileNameIndex = 0
