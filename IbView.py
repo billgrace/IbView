@@ -10,6 +10,7 @@ import IbViewGui
 import IbViewUtilities
 
 def Main():
+	
 	IbViewStorage.ReadPreferencesFile()
 	IbViewStorage.GetDataFileDescriptors()
 	IbViewStorage.GetUnderlyingDataDates()
