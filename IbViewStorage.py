@@ -1,6 +1,7 @@
 import sys
 import os
 import io
+import datetime
 import avro.datafile
 import avro.io
 
@@ -27,6 +28,12 @@ def ReadPreferencesFile():
 					SharedVars.DataFilePath = KeyValue
 				elif(KeyWord == 'SiftedDataPath'):
 					SharedVars.SiftedDataPath = KeyValue
+				elif(KeyWord == 'FilteredDataPath'):
+					SharedVars.FilteredDataPath = KeyValue
+				elif(KeyWord == 'ScaledDataPath'):
+					SharedVars.ScaledDataPath = KeyValue
+				elif(KeyWord == 'ShapedDataPath'):
+					SharedVars.ShapedDataPath = KeyValue
 				else:
 					IbViewUtilities.LogError('unrecognized preference.cfg KeyWord: ' + KeyWord + ' on line #' + str(LineNumber))
 			except Exception as e:
@@ -89,28 +96,28 @@ def GetDataFileDescriptors():
 		FileDescriptor['LogHour'] = float(FileName[-8:-4])
 
 def GetUnderlyingDataDates():
-	TestDate = IbViewClasses.DateClass()
-	SharedVars.UnderlyingEarliestDate['year'] = 9999
-	SharedVars.UnderlyingLatestDate['year'] = 0
+	TestDate = datetime.date(2000, 1, 1)
+	SharedVars.UnderlyingEarliestDate.replace(year = 9999)
+	SharedVars.UnderlyingLatestDate.replace(year = 1)
 	for FileDescriptor in SharedVars.ListOfUnderlyingAvroDataFileDescriptors:
-		TestDate['year'] = FileDescriptor['LogYear']
-		TestDate['month'] = FileDescriptor['LogMonth']
-		TestDate['day'] = FileDescriptor['LogDay']
+		TestDate.replace(year = FileDescriptor['LogYear'])
+		TestDate.replace(month = FileDescriptor['LogMonth'])
+		TestDate.replace(day = FileDescriptor['LogDay'])
 		if IbViewEnums.DateComparisonResult['FirstIsBeforeSecond'] == IbViewUtilities.CompareDates(TestDate, SharedVars.UnderlyingEarliestDate):
-			SharedVars.UnderlyingEarliestDate['month'] = TestDate['month']
-			SharedVars.UnderlyingEarliestDate['day'] = TestDate['day']
-			SharedVars.UnderlyingEarliestDate['year'] = TestDate['year']
+			SharedVars.UnderlyingEarliestDate.replace(month = TestDate.month)
+			SharedVars.UnderlyingEarliestDate.replace(day = TestDate.day)
+			SharedVars.UnderlyingEarliestDate.replace(year = TestDate.year)
 		if IbViewEnums.DateComparisonResult['FirstIsAfterSecond'] == IbViewUtilities.CompareDates(TestDate, SharedVars.UnderlyingLatestDate):
-			SharedVars.UnderlyingLatestDate['month'] = TestDate['month']
-			SharedVars.UnderlyingLatestDate['day'] = TestDate['day']
-			SharedVars.UnderlyingLatestDate['year'] = TestDate['year']
+			SharedVars.UnderlyingLatestDate.replace(month = TestDate.month)
+			SharedVars.UnderlyingLatestDate.replace(day = TestDate.day)
+			SharedVars.UnderlyingLatestDate.replace(year = TestDate.year)
 
 def GetUnderlyingJsonFilenamesForDate(date):
 	UnderlyingJsonFilesForThisDate = []
 	for FileDescriptor in SharedVars.ListOfUnderlyingJsonDataFileDescriptors:
-		if FileDescriptor['LogYear'] == date['year'] and \
-				FileDescriptor['LogMonth'] == date['month'] and \
-				FileDescriptor['LogDay'] == date['day']:
+		if FileDescriptor['LogYear'] == date.year and \
+				FileDescriptor['LogMonth'] == date.month and \
+				FileDescriptor['LogDay'] == date.day:
 			UnderlyingJsonFilesForThisDate.append(FileDescriptor['FileName'])
 	returnList = sorted(UnderlyingJsonFilesForThisDate)
 	return returnList
@@ -118,15 +125,15 @@ def GetUnderlyingJsonFilenamesForDate(date):
 def GetUnderlyingAvroFilenamesForDate(date):
 	UnderlyingAvroFilesForThisDate = []
 	for FileDescriptor in SharedVars.ListOfUnderlyingAvroDataFileDescriptors:
-		if FileDescriptor['LogYear'] == date['year'] and \
-				FileDescriptor['LogMonth'] == date['month'] and \
-				FileDescriptor['LogDay'] == date['day']:
+		if FileDescriptor['LogYear'] == date.year and \
+				FileDescriptor['LogMonth'] == date.month and \
+				FileDescriptor['LogDay'] == date.day:
 			UnderlyingAvroFilesForThisDate.append(FileDescriptor['FileName'])
 	returnList = sorted(UnderlyingAvroFilesForThisDate)
 	return returnList
 
 def SiftUnderlyingAvroDate(date):
-	OutputFileName = 'SPXprice-' + str(date['year']) + '-' + str(date['month']) + '-' + str(date['day'])
+	OutputFileName = 'SPXprice-' + str(date.year) + '-' + str(date.month) + '-' + str(date.day)
 	OutputFile = open(SharedVars.SiftedDataPath + '/' + OutputFileName, 'wt')
 	JsonFilesToSift = GetUnderlyingJsonFilenamesForDate(date)
 	AvroFilesToSift = GetUnderlyingAvroFilenamesForDate(date)

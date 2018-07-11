@@ -1,14 +1,18 @@
 import time
-import tkinter as tk
+import datetime
+from tkinter import *
 from tkinter import ttk
 import avro.schema
 import IbViewEnums
 import IbViewClasses
 import IbViewGui
 
-# Preferences file items
-DataFilePath = ''
-SiftedDataPath = ''
+# Raw logged data
+FirstValidDataDate = datetime.date(2018, 6, 18)
+LastValidDataDate = datetime.date(2000, 1, 1)
+UnderlyingEarliestDate = datetime.date(2000, 1, 1)
+UnderlyingLatestDate = datetime.date(2000, 1, 1)
+LoggedDataFilePath = ''
 DataFileDirectoryList = []
 ListOfAllDataFileDescriptors = []
 ListOfUnderlyingJsonDataFileDescriptors = []
@@ -22,18 +26,53 @@ NumberOfUnderlyingAvroFiles = 0
 NumberOfOptionJsonFiles = 0
 NumberOfOptionAvroFiles = 0
 NumberOfOtherFiles = 0
-UnderlyingEarliestDate = IbViewClasses.DateClass()
-UnderlyingLatestDate = IbViewClasses.DateClass()
+
+# Sift, Filter, Scale, Shape
+SiftedDataPath = ''
+FilteredDataPath = ''
+ScaledDataPath = ''
+ShapedDataPath = ''
+LastSiftedDate = datetime.date(2000, 1, 1)
+LastFilteredDate = datetime.date(2000, 1, 1)
+LastScaledDate = datetime.date(2000, 1, 1)
+LastShapedDate = datetime.date(2000, 1, 1)
 
 # Gui - General
-GuiMainWindowWidth = 1100
-GuiMainWindowHeight = 700
-GuiMainWindowLeft = 10
-GuiMainWindowTop = 10
-GuiRefreshInterval = 300
-GuiWindow = tk.Tk()
+GuiOSWindow = Tk()
+GuiWindow = ttk.Frame(GuiOSWindow, padding="3 3 12 12")
+GuiWindow.grid(column=0, row=0, sticky=(N+W+E+S))
 
-# Gui - Miscellaneous
-GuiDevelopmentMessageLabel = tk.Label(GuiWindow, text='(---)', fg='#055', bg='#8ff')
-GuiExitButton = tk.Button(GuiWindow, text='Exit', command=IbViewGui.ExitGui)
+# Gui - Refresh
+GuiRefreshInterval = 300
+GuiRefreshWheelChars = ['|', '/', '-', '\\', 'O', '0', 'o', '_', '.']
+GuiRefreshWheelIndex = 0
+GuiRefreshWheelLabel = Label(GuiWindow)
+
+# Gui - Labels
+GuiFirstValidDateLabel = Label(GuiWindow)
+GuiLastLoggedDateLabel = Label(GuiWindow)
+GuiLastSiftedDateLabel = Label(GuiWindow, text = 'Last sifted date: (---)')
+GuiLastFilteredDateLabel = Label(GuiWindow, text = 'Last filtered date: (---)')
+GuiLastScaledDateLabel = Label(GuiWindow, text = 'Last scaled date: (---)')
+GuiLastShapedDateLabel = Label(GuiWindow, text = 'Last shaped date: (---)')
+GuiDevelopmentMessageLabel = Label(GuiWindow, text='(---)', fg='#055', bg='#8ff')
+
+# Gui - Buttons
+GuiSiftButton = Button(GuiWindow, text='Sift', command=IbViewGui.Sift)
+GuiFilterButton = Button(GuiWindow, text='Filter', command=IbViewGui.Filter)
+GuiScaleButton = Button(GuiWindow, text='Scale', command=IbViewGui.Scale)
+GuiShapeButton = Button(GuiWindow, text='Shape', command=IbViewGui.Shape)
+GuiExitButton = Button(GuiWindow, text='Exit', command=IbViewGui.ExitGui)
+
+# Gui - Text window
+GuiTextWindowWidth = 80	# width in characters
+GuiTextWindowHeight = 40 # height in lines
+GuiTextWindowRight = 0.95
+GuiTextWindowTop = 0.1
+
+GuiTextWindow = Text(GuiWindow, width=GuiTextWindowWidth, height=GuiTextWindowHeight, wrap='word')
+GuiTextWindowVerticalScrollBar = Scrollbar(GuiWindow, orient=VERTICAL, command=GuiTextWindow.yview)
+GuiTextWindowHorizontalScrollBar = Scrollbar(GuiWindow, orient=HORIZONTAL, command=GuiTextWindow.xview)
+GuiTextWindow.configure(yscrollcommand=GuiTextWindowVerticalScrollBar.set)
+GuiTextWindow.configure(xscrollcommand=GuiTextWindowHorizontalScrollBar.set)
 

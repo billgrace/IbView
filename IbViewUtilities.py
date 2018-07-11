@@ -236,20 +236,23 @@ def StringFormatGreek(FloatAmount):
 def StringFormatTimestamp(Timestamp):
 	return '{Hour:02d}:{Minute:02d}:{Second:02d}.{Millisecond:03d}'.format(**Timestamp)
 
+def FormatDateShortMonth(date):
+	return f'{date.strftime("%b %-d, %Y")}'
+
 def CompareDates(Date1, Date2):
-	if Date1['year'] < Date2['year']:
+	if Date1.year < Date2.year:
 		return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
-	elif Date1['year'] > Date2['year']:
+	elif Date1.year > Date2.year:
 		return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
 	else:
-		if Date1['month'] < Date2['month']:
+		if Date1.month < Date2.month:
 			return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
-		elif Date1['month'] > Date2['month']:
+		elif Date1.month > Date2.month:
 			return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
 		else:
-			if Date1['day'] < Date2['day']:
+			if Date1.day < Date2.day:
 				return IbViewEnums.DateComparisonResult['FirstIsBeforeSecond']
-			elif Date1['day'] > Date2['day']:
+			elif Date1.day > Date2.day:
 				return IbViewEnums.DateComparisonResult['FirstIsAfterSecond']
 			else:
 				return IbViewEnums.DateComparisonResult['DatesAreEqual']
@@ -291,8 +294,8 @@ SpxExpirationDates2018.append("2,5,7,9,12,14,16,19,21,23,26,28,30")
 SpxExpirationDates2018.append("3,5,7,10,12,14,17,19,21,24,26,28,31")
 def DateIsATradingDay(date):
     returnValue = False
-    stringArrayIndex = date['month']
-    todayDayInteger = date['day']
+    stringArrayIndex = date.month
+    todayDayInteger = date.day
     dayStrings = TradingDates2018[stringArrayIndex].split(',')
     for dayString in dayStrings:
         if (todayDayInteger == int(dayString)):
@@ -301,10 +304,16 @@ def DateIsATradingDay(date):
     return returnValue
 def DateIsAlreadySifted(date):
     returnValue = False
-    FileNameDateFormat = f"{date['year']}-{date['month']}-{date['day']}"
+    FileNameDateFormat = f"{date.year}-{date.month}-{date.day}"
     SiftedDataFileDirectoryList = os.listdir(SharedVars.SiftedDataPath)
     for SiftedDataFileName in SiftedDataFileDirectoryList:
         if FileNameDateFormat == SiftedDataFileName[-9:]:
             returnValue = True
             break
     return returnValue
+
+def EmptyTextWindow():
+	SharedVars.GuiTextWindow.delete('1.0', 'end')
+
+def AddLineToTextWindow(text):
+	SharedVars.GuiTextWindow.insert('end', text + '\n')
