@@ -133,7 +133,7 @@ def GetUnderlyingAvroFilenamesForDate(date):
 	return returnList
 
 def SiftUnderlyingAvroDate(date):
-	OutputFileName = 'SPXprice-' + str(date.year) + '-' + str(date.month) + '-' + str(date.day)
+	OutputFileName = 'SPXprice-' + str(date.year) + '-' + str(date.month) + '-' + str(date.day) + '.csv'
 	OutputFile = open(SharedVars.SiftedDataPath + '/' + OutputFileName, 'wt')
 	JsonFilesToSift = GetUnderlyingJsonFilenamesForDate(date)
 	AvroFilesToSift = GetUnderlyingAvroFilenamesForDate(date)
@@ -150,6 +150,10 @@ def SiftUnderlyingAvroDate(date):
 			JsonFileLine = CurrentJsonInputFile.readline()
 			FileLineNumber += 1
 			TimeStampString, AvroStringWithByteTags = AvroFileLine.split('---')
+			HourString = TimeStampString[22:24]
+			MinuteString = TimeStampString[25:27]
+			SecondString = TimeStampString[28:30]
+			MillisecondString = TimeStampString[31:34]
 			AvroString = AvroStringWithByteTags[2:-2]
 			AvroByteArray = IbViewUtilities.DecodeStringToBytes(AvroString)
 			AvroByteStream = io.BytesIO(AvroByteArray)
@@ -157,7 +161,8 @@ def SiftUnderlyingAvroDate(date):
 				reader = avro.datafile.DataFileReader(AvroByteStream, avro.io.DatumReader())
 				for datum in reader:
 					# print('Line: ' + str(LineNumber) + ' at time ' + TimeStampString + ' has price at: ' + str(datum['Last']['Price']), file=OutputCaptureFile)
-					print('Line: ' + str(FileLineNumber) + ' at time ' + TimeStampString + ' has price at: ' + str(datum['Last']['Price']), file=OutputFile)
+					# print('Line: ' + str(FileLineNumber) + ' at time ' + TimeStampString + ' has price at: ' + str(datum['Last']['Price']), file=OutputFile)
+					print(HourString + ', ' + MinuteString + ', ' + SecondString + ', ' + MillisecondString + ', ' + str(datum['Last']['Price']), file=OutputFile)
 				reader.close()
 			except Exception as e:
 				ex_type, ex_value, ex_traceback = sys.exc_info()
