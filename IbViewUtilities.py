@@ -292,6 +292,7 @@ SpxExpirationDates2018.append("5,7,10,12,14,17,19,21,24,26,28")
 SpxExpirationDates2018.append("1,3,5,8,10,12,15,17,19,22,24,26,29,31")
 SpxExpirationDates2018.append("2,5,7,9,12,14,16,19,21,23,26,28,30")
 SpxExpirationDates2018.append("3,5,7,10,12,14,17,19,21,24,26,28,31")
+
 def DateIsATradingDay(date):
     returnValue = False
     stringArrayIndex = date.month
@@ -302,12 +303,23 @@ def DateIsATradingDay(date):
             returnValue = True
             break
     return returnValue
+
 def DateIsAlreadySifted(date):
     returnValue = False
-    FileNameDateFormat = f"{date.year}-{date.month}-{date.day}"
+    FileNameDateFormat = f"{date.year:4}-{date.month:02}-{date.day:02}.csv"
     SiftedDataFileDirectoryList = os.listdir(SharedVars.SiftedDataPath)
     for SiftedDataFileName in SiftedDataFileDirectoryList:
-        if FileNameDateFormat == SiftedDataFileName[-9:]:
+        if FileNameDateFormat == SiftedDataFileName[-14:]:
+            returnValue = True
+            break
+    return returnValue
+
+def DateIsAlreadyFiltered(date):
+    returnValue = False
+    FileNameDateFormat = f"{date.year:4}-{date.month:02}-{date.day:02}.csv"
+    FilteredDataFileDirectoryList = os.listdir(SharedVars.FilteredDataPath)
+    for FilteredDataFileName in FilteredDataFileDirectoryList:
+        if FileNameDateFormat == FilteredDataFileName[-14:]:
             returnValue = True
             break
     return returnValue

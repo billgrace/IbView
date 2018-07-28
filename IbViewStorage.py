@@ -133,7 +133,10 @@ def GetUnderlyingAvroFilenamesForDate(date):
 	return returnList
 
 def SiftUnderlyingAvroDate(date):
-	OutputFileName = 'SPXprice-' + str(date.year) + '-' + str(date.month) + '-' + str(date.day) + '.csv'
+	# Input is raw, logged data files. Each file covers one hour of a trading day. Contents are text lines with time code and avro-serialized market data.
+	# Output is one file per trading day. Each line of text is time stamp and SPX value. There's one line per 10 seconds through the trading day.
+	# OutputFileName = 'SPXprice-' + str(date.year) + '-' + str(date.month) + '-' + str(date.day) + '.csv'
+	OutputFileName = f'SPXprice-{date.year:4}-{date.month:02}-{date.day:02}.csv'
 	OutputFile = open(SharedVars.SiftedDataPath + '/' + OutputFileName, 'wt')
 	JsonFilesToSift = GetUnderlyingJsonFilenamesForDate(date)
 	AvroFilesToSift = GetUnderlyingAvroFilenamesForDate(date)
@@ -173,4 +176,40 @@ def SiftUnderlyingAvroDate(date):
 			AvroByteStream.close()
 		CurrentJsonInputFile.close()
 		CurrentAvroInputFile.close()
+	OutputFile.close()
+
+def FilterUnderlyingDate(date):
+	# Input is the output from the Sifting stage.
+	# Output is the same as the input with lines trimmed omitted for entries before 6:30 AM, after 1:00 PM, or having SPX value < 1,000 or > 10,000
+	FileName = f'SPXprice-{date.year:4}-{date.month:02}-{date.day:02}.csv'
+	InputFile = open(SharedVars.SiftedDataPath + '/' + FileName, 'rt')
+	OutputFile = open(SharedVars.FilteredDataPath + '/' + FileName, 'wt')
+	for CurrentLine in InputFile:
+		KeepThisLine = True
+		FilteringIsComplete = False
+		ThisLineValues = CurrentLine.split(',')
+		ThisHour = int(ThisLineValues[0])
+		ThisMinute = int(ThisLineValues[1])
+		ThisSecond = int(ThisLineValues[2])
+		ThisMillisecond = int(ThisLineValues[3])
+		ThisValue = float(ThisLineValues[4])
+		# Drop times before 6:30 AM
+		if ThisHour < 6:
+			KeepThisLine = False
+		if ThisHour == 6 and ThisMinute < 30:
+			KeepThisLine = False
+		# Keep the first line with hour == 1:00 PM and break to skip all later lines
+		if ThisHour == 13:
+			FilteringIsComplete = True
+		# Drop values < 1,000.0
+		if ThisValue < 1000.0:
+			KeepThisLine = False
+		# Drop values > 10,000.0
+		if ThisValue > 10000.0:
+			KeepThisLine = False
+		if KeepThisLine:
+			print(ThisLineValues[0] + ', ' + ThisLineValues[1] + ', ' + ThisLineValues[2] + ', ' + ThisLineValues[3] + ', ' + ThisLineValues[4], file=OutputFile)
+		if FilteringIsComplete:
+			break
+	InputFile.close()
 	OutputFile.close()

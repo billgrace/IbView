@@ -51,13 +51,16 @@ def RefreshGui():
 	SharedVars.GuiRefreshWheelLabel.configure(text = SharedVars.GuiRefreshWheelChars[SharedVars.GuiRefreshWheelIndex])
 	SharedVars.GuiOSWindow.after(SharedVars.GuiRefreshInterval, RefreshGui)
 
-def Sift():
-	IbViewUtilities.EmptyTextWindow()
+def SetLastValidDataDate():
 	RightNow = datetime.datetime.today()
 	if RightNow.hour > 19:
 		SharedVars.LastValidDataDate = datetime.date(RightNow.year, RightNow.month, RightNow.day)
 	else:
 		SharedVars.LastValidDataDate = datetime.date(RightNow.year, RightNow.month, RightNow.day) - datetime.timedelta(days=1)
+
+def Sift():
+	IbViewUtilities.EmptyTextWindow()
+	SetLastValidDataDate()
 	SiftDate = SharedVars.FirstValidDataDate
 	while SiftDate <= SharedVars.LastValidDataDate:
 		if IbViewUtilities.DateIsATradingDay(SiftDate):
@@ -72,9 +75,33 @@ def Sift():
 		SharedVars.GuiWindow.update()
 		SiftDate += datetime.timedelta(days=1)
 	SharedVars.GuiLastSiftedDateLabel.configure(text = f'Last sifted date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastSiftedDate)}')
+	IbViewUtilities.AddLineToTextWindow('Sifting is finished')
+	SharedVars.GuiWindow.update()
 
 def Filter():
+	IbViewUtilities.EmptyTextWindow()
+	SetLastValidDataDate()
+	FilterDate = SharedVars.FirstValidDataDate
+	while FilterDate <= SharedVars.LastValidDataDate:
+		if IbViewUtilities.DateIsATradingDay(FilterDate):
+			if IbViewUtilities.DateIsAlreadyFiltered(FilterDate):
+				IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(FilterDate)} has already been filtered')
+			else:
+				IbViewUtilities.AddLineToTextWindow(f'Filtering {IbViewUtilities.FormatDateShortMonth(FilterDate)}')
+				IbViewStorage.FilterUnderlyingDate(FilterDate)
+				SharedVars.LastFilteredDate = FilterDate
+
+
+				print('Filtered one date.')
+				exit()
+
+		else:
+			IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(FilterDate)} is not a trading day')
+		SharedVars.GuiWindow.update()
+		FilterDate += datetime.timedelta(days=1)
 	SharedVars.GuiLastFilteredDateLabel.configure(text = f'Last filtered date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastFilteredDate)}')
+	IbViewUtilities.AddLineToTextWindow('Filtering is finished')
+	SharedVars.GuiWindow.update()
 
 def Scale():
 	SharedVars.GuiLastScaledDateLabel.configure(text = f'Last scaled date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastScaledDate)}')
