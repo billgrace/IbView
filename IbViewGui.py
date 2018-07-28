@@ -90,11 +90,6 @@ def Filter():
 				IbViewUtilities.AddLineToTextWindow(f'Filtering {IbViewUtilities.FormatDateShortMonth(FilterDate)}')
 				IbViewStorage.FilterUnderlyingDate(FilterDate)
 				SharedVars.LastFilteredDate = FilterDate
-
-
-				print('Filtered one date.')
-				exit()
-
 		else:
 			IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(FilterDate)} is not a trading day')
 		SharedVars.GuiWindow.update()

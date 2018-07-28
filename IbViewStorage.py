@@ -208,7 +208,7 @@ def FilterUnderlyingDate(date):
 		if ThisValue > 10000.0:
 			KeepThisLine = False
 		if KeepThisLine:
-			print(ThisLineValues[0] + ', ' + ThisLineValues[1] + ', ' + ThisLineValues[2] + ', ' + ThisLineValues[3] + ', ' + ThisLineValues[4], file=OutputFile)
+			print(CurrentLine, end='', file=OutputFile)
 		if FilteringIsComplete:
 			break
 	InputFile.close()
