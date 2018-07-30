@@ -99,6 +99,7 @@ def Filter():
 	SharedVars.GuiWindow.update()
 
 def Scale():
+	IbViewStorage.ScaleUnderlying('Min', 15, False)
 	SharedVars.GuiLastScaledDateLabel.configure(text = f'Last scaled date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastScaledDate)}')
 
 def Shape():

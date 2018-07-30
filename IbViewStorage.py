@@ -213,3 +213,25 @@ def FilterUnderlyingDate(date):
 			break
 	InputFile.close()
 	OutputFile.close()
+
+def ScaleUnderlying(IntervalName, IntervalQuantity, AverageFlag):
+	if AverageFlag:
+		AverageLetter = 'A'
+	else:
+		AverageLetter = 'S'
+	OutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}{AverageLetter}.csv'
+	OutputFile = open(SharedVars.ScaledDataPath + '/' + OutputFileName, 'wt')
+	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
+	for InputFileName in InputFileNameList:
+		InputFile = open(SharedVars.FilteredDataPath + '/' + InputFileName, 'rt')
+		InputFileNameParts = InputFileName.split('-')
+		InputFileYearString = InputFileNameParts[1]
+		InputFileMonthString = InputFileNameParts[2]
+		InputFileDayString = InputFileNameParts[3][0:2]
+
+		print(InputFileNameList)
+		print(InputFileYearString, InputFileMonthString, InputFileDayString)
+		print(OutputFileName)
+		exit()
+
+	OutputFile.close()
