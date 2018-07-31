@@ -98,9 +98,25 @@ def Filter():
 	IbViewUtilities.AddLineToTextWindow('Filtering is finished')
 	SharedVars.GuiWindow.update()
 
+def ScaleAllIntervals(AverageFlag):
+	IbViewStorage.ScaleUnderlying('Second', 20, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Second', 30, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Second', 40, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Minute', 1, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Minute', 5, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Minute', 10, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Minute', 15, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Minute', 30, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Hour', 1, AverageFlag)
+	IbViewStorage.ScaleUnderlying('Hour', 2, AverageFlag)
+
 def Scale():
-	IbViewStorage.ScaleUnderlying('Min', 15, False)
+	IbViewUtilities.EmptyTextWindow()
+	ScaleAllIntervals(False)
+	ScaleAllIntervals(True)
 	SharedVars.GuiLastScaledDateLabel.configure(text = f'Last scaled date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastScaledDate)}')
+	IbViewUtilities.AddLineToTextWindow('Scaling is finished')
+	SharedVars.GuiWindow.update()
 
 def Shape():
 	SharedVars.GuiLastShapedDateLabel.configure(text = f'Last shaped date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastShapedDate)}')

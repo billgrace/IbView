@@ -215,23 +215,75 @@ def FilterUnderlyingDate(date):
 	OutputFile.close()
 
 def ScaleUnderlying(IntervalName, IntervalQuantity, AverageFlag):
+	# Are we averaging or sampling?
 	if AverageFlag:
 		AverageLetter = 'A'
 	else:
 		AverageLetter = 'S'
+	# Set up the single output file we're making and traverse all the input files
 	OutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}{AverageLetter}.csv'
 	OutputFile = open(SharedVars.ScaledDataPath + '/' + OutputFileName, 'wt')
-	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
+	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
 	for InputFileName in InputFileNameList:
 		InputFile = open(SharedVars.FilteredDataPath + '/' + InputFileName, 'rt')
+		# For each input file, set up the date strings for the output file lines
 		InputFileNameParts = InputFileName.split('-')
-		InputFileYearString = InputFileNameParts[1]
-		InputFileMonthString = InputFileNameParts[2]
-		InputFileDayString = InputFileNameParts[3][0:2]
-
-		print(InputFileNameList)
-		print(InputFileYearString, InputFileMonthString, InputFileDayString)
-		print(OutputFileName)
-		exit()
-
+		YearString = InputFileNameParts[1]
+		MonthString = InputFileNameParts[2]
+		DayString = InputFileNameParts[3][0:2]
+		# Figure out the requested scaling in terms of how many one-per-10-second input
+		#  lines we'll boil down to each line in the output file
+		ScaleCount = 10	# fake value in case we have to error out on a bad interval definition
+		if IntervalName == 'Second':
+			if IntervalQuantity == 20:
+				ScaleCount = 2
+			elif IntervalQuantity == 30:
+				ScaleCount = 3
+			elif IntervalQuantity == 40:
+				ScaleCount = 4
+			else:
+				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
+		elif IntervalName == 'Minute':
+			if IntervalQuantity == 1:
+				ScaleCount = 6
+			elif IntervalQuantity == 5:
+				ScaleCount = 30
+			elif IntervalQuantity == 10:
+				ScaleCount = 60
+			elif IntervalQuantity == 15:
+				ScaleCount = 90
+			elif IntervalQuantity ==30:
+				ScaleCount = 180
+			else:
+				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Minutes')
+		elif IntervalName == 'Hour':
+			if IntervalQuantity == 1:
+				ScaleCount = 360
+			elif IntervalQuantity == 2:
+				ScaleCount = 720
+			else:
+				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
+		# We want to sample the SPX value and time stamp at approximately the middle of the
+		#  batch of input lines being processed into each output line
+		ScaleHalfCount = int(ScaleCount/2)
+		ScaleCounter = 0
+		ValueAccumulator = 0.0
+		for InputFileLine in InputFile:
+			InputFileLineParts = InputFileLine.split(',')
+			ValueAccumulator += float(InputFileLineParts[4])
+			ScaleCounter += 1
+			if ScaleCounter == ScaleHalfCount:
+				HourString = InputFileLineParts[0]
+				MinuteString = InputFileLineParts[1]
+				SecondString = InputFileLineParts[2]
+				SampledValueString = InputFileLineParts[4]
+			if ScaleCounter == ScaleCount:
+				AveragedValueString = f'{(ValueAccumulator/ScaleCount):.2f}'
+				ScaleCounter = 0
+				ValueAccumulator = 0.0
+				if AverageFlag:
+					print(f'{YearString}, {MonthString}, {DayString}, {HourString}, {MinuteString}, {SecondString}, {AveragedValueString}', file=OutputFile)
+				else:
+					print(f'{YearString}, {MonthString}, {DayString}, {HourString}, {MinuteString}, {SecondString}, {SampledValueString}', end='', file=OutputFile)
+		InputFile.close()
 	OutputFile.close()
