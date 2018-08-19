@@ -36,6 +36,7 @@ LastSiftedDate = datetime.date(2000, 1, 1)
 LastFilteredDate = datetime.date(2000, 1, 1)
 LastScaledDate = datetime.date(2000, 1, 1)
 LastShapedDate = datetime.date(2000, 1, 1)
+TotalSiftedDaysAvailable = 0
 
 # Gui - General
 GuiOSWindow = Tk()

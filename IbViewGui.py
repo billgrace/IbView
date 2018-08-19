@@ -62,8 +62,10 @@ def Sift():
 	IbViewUtilities.EmptyTextWindow()
 	SetLastValidDataDate()
 	SiftDate = SharedVars.FirstValidDataDate
+	SharedVars.TotalSiftedDaysAvailable = 0
 	while SiftDate <= SharedVars.LastValidDataDate:
 		if IbViewUtilities.DateIsATradingDay(SiftDate):
+			SharedVars.TotalSiftedDaysAvailable += 1
 			if IbViewUtilities.DateIsAlreadySifted(SiftDate):
 				IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(SiftDate)} has already been sifted')
 			else:
@@ -74,7 +76,7 @@ def Sift():
 			IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(SiftDate)} is not a trading day')
 		SharedVars.GuiWindow.update()
 		SiftDate += datetime.timedelta(days=1)
-	SharedVars.GuiLastSiftedDateLabel.configure(text = f'Last sifted date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastSiftedDate)}')
+	SharedVars.GuiLastSiftedDateLabel.configure(text = f'Last sifted date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastSiftedDate)}\nDays available: {SharedVars.TotalSiftedDaysAvailable}')
 	IbViewUtilities.AddLineToTextWindow('Sifting is finished')
 	SharedVars.GuiWindow.update()
 
