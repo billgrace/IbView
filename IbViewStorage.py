@@ -214,76 +214,170 @@ def FilterUnderlyingDate(date):
 	InputFile.close()
 	OutputFile.close()
 
-def ScaleUnderlying(IntervalName, IntervalQuantity, AverageFlag):
-	# Are we averaging or sampling?
-	if AverageFlag:
-		AverageLetter = 'A'
-	else:
-		AverageLetter = 'S'
-	# Set up the single output file we're making and traverse all the input files
-	OutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}{AverageLetter}.csv'
-	OutputFile = open(SharedVars.ScaledDataPath + '/' + OutputFileName, 'wt')
-	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                         
+def ScaleUnderlying(IntervalName, IntervalQuantity):
+	# Convert the given interval for use in looping through the input files
+	DeltaSeconds = 0
+	DeltaMinutes = 0
+	DeltaHours = 0
+	if IntervalName == 'Second':
+		if IntervalQuantity == 20:
+			DeltaSeconds = 20
+		elif IntervalQuantity == 30:
+			DeltaSeconds = 30
+		elif IntervalQuantity == 40:
+			DeltaSeconds = 40
+		else:
+			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
+	elif IntervalName == 'Minute':
+		if IntervalQuantity == 1:
+			DeltaMinutes = 1
+		elif IntervalQuantity == 5:
+			DeltaMinutes = 5
+		elif IntervalQuantity == 10:
+			DeltaMinutes = 10
+		elif IntervalQuantity == 15:
+			DeltaMinutes = 15
+		elif IntervalQuantity ==30:
+			DeltaMinutes = 30
+		else:
+			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Minutes')
+	elif IntervalName == 'Hour':
+		if IntervalQuantity == 1:
+			DeltaHours = 1
+		elif IntervalQuantity == 2:
+			DeltaHours = 2
+		else:
+			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
+	# Set up an file for averaging and another for sampling
+	AveragingOutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}A.csv'
+	AveragingOutputFile = open(SharedVars.ScaledDataPath + '/' + AveragingOutputFileName, 'wt')
+	SamplingOutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}S.csv'
+	SamplingOutputFile = open(SharedVars.ScaledDataPath + '/' + SamplingOutputFileName, 'wt')
+	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
+	# Traverse the list of input files
 	for InputFileName in InputFileNameList:
 		InputFile = open(SharedVars.FilteredDataPath + '/' + InputFileName, 'rt')
 		# For each input file, set up the date strings for the output file lines
 		InputFileNameParts = InputFileName.split('-')
-		YearString = InputFileNameParts[1]
-		MonthString = InputFileNameParts[2]
-		DayString = InputFileNameParts[3][0:2]
-		# Figure out the requested scaling in terms of how many one-per-10-second input
-		#  lines we'll boil down to each line in the output file
-		ScaleCount = 10	# fake value in case we have to error out on a bad interval definition
-		if IntervalName == 'Second':
-			if IntervalQuantity == 20:
-				ScaleCount = 2
-			elif IntervalQuantity == 30:
-				ScaleCount = 3
-			elif IntervalQuantity == 40:
-				ScaleCount = 4
-			else:
-				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
-		elif IntervalName == 'Minute':
-			if IntervalQuantity == 1:
-				ScaleCount = 6
-			elif IntervalQuantity == 5:
-				ScaleCount = 30
-			elif IntervalQuantity == 10:
-				ScaleCount = 60
-			elif IntervalQuantity == 15:
-				ScaleCount = 90
-			elif IntervalQuantity ==30:
-				ScaleCount = 180
-			else:
-				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Minutes')
-		elif IntervalName == 'Hour':
-			if IntervalQuantity == 1:
-				ScaleCount = 360
-			elif IntervalQuantity == 2:
-				ScaleCount = 720
-			else:
-				IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
-		# We want to sample the SPX value and time stamp at approximately the middle of the
-		#  batch of input lines being processed into each output line
-		ScaleHalfCount = int(ScaleCount/2)
-		ScaleCounter = 0
-		ValueAccumulator = 0.0
+		InputYear = int(InputFileNameParts[1])
+		InputMonth = int(InputFileNameParts[2])
+		InputDay = int(InputFileNameParts[3][0:2])
+
+		# Averaging variables
+		WaitingForSecondSamplePoint = True
+		Accumulator = 0.0
+		Count = 0
+		SavedAccumulator = 0.0
+		SavedCount = 0
+		LaggingHour = 0
+		LaggingMinute = 0
+		LaggingSecond = 0
+
+		# Start with the first time to be added to the output file
+		OutputHour = 6
+		OutputMinute = 30
+		OutputSecond = 0
+
+		# Traverse the lines in the current input file
 		for InputFileLine in InputFile:
 			InputFileLineParts = InputFileLine.split(',')
-			ValueAccumulator += float(InputFileLineParts[4])
-			ScaleCounter += 1
-			if ScaleCounter == ScaleHalfCount:
-				HourString = InputFileLineParts[0]
-				MinuteString = InputFileLineParts[1]
-				SecondString = InputFileLineParts[2]
-				SampledValueString = InputFileLineParts[4]
-			if ScaleCounter == ScaleCount:
-				AveragedValueString = f'{(ValueAccumulator/ScaleCount):.2f}'
-				ScaleCounter = 0
-				ValueAccumulator = 0.0
-				if AverageFlag:
-					print(f'{YearString}, {MonthString}, {DayString}, {HourString}, {MinuteString}, {SecondString}, {AveragedValueString}', file=OutputFile)
+			InputHour = int(InputFileLineParts[0])
+			InputMinute = int(InputFileLineParts[1])
+			InputSecond = int(InputFileLineParts[2])
+			InputValue = float(InputFileLineParts[4])
+			if OutputHour == 6 and OutputMinute == 30 and OutputSecond == 0:
+				# This is the first input file entry - copy it straight across to both output files
+				WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+				WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+				# Initialize interval recognition
+				TargetHour, TargetMinute, TargetSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+				# Initialize averaging
+				Accumulator = 0.0
+				Count = 0
+				SavedAccumulator = 0.0
+				SavedCount = 0
+			elif OutputHour == 13 and OutputMinute == 0 and OutputSecond == 0:
+				# This is the last input file entry....
+				# Write out the last average value
+				# Write out the last input file entry to both files
+				WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+				WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+				# Move on to the next input file
+				break
+			else:
+				# This is beyond the first entry but not yet at the last entry in the input file
+				if TimesAreEqual(InputHour, InputMinute, InputSecond, TargetHour, TargetMinute, TargetSecond):
+					# This input file entry falls on (well.... close enough to) a time that is to be included in the output file
+					# ... Move our interval recognition to the next target
+					OutputHour = TargetHour
+					OutputMinute = TargetMinute
+					OutputSecond = TargetSecond
+					TargetHour, TargetMinute, TargetSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+					# The sampling output file always gets written to here
+					WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+					# The averaging output file gets written lagging behind since the average value includes the band of input values both before AND after the output time
+					LaggingHour = OutputHour
+					LaggingMinute = OutputMinute
+					LaggingSecond = OutputSecond
+					if WaitingForSecondSamplePoint:
+						# The lagging average handling means we have to skip past one output average write
+						WaitingForSecondSamplePoint = False
+					else:
+						# We're at least up to the third time point in the input file so we write the average for the previous time point into the output file
+						AverageValue = (Accumulator + SavedAccumulator) / (Count + SavedCount)
+						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, LaggingHour, LaggingMinute, LaggingSecond, AverageValue)
+					SavedAccumulator = Accumulator + InputValue
+					SavedCount = Count + 1
+					Accumulator = 0.0
+					Count = 0
 				else:
-					print(f'{YearString}, {MonthString}, {DayString}, {HourString}, {MinuteString}, {SecondString}, {SampledValueString}', end='', file=OutputFile)
+					# This input file entry falls between the times that are to be included in the output file
+					# ??? Possible error if we've passed the target time without coming close enough to it.
+					if Time1IsAfterTime2(InputHour, InputMinute, InputSecond, TargetHour, TargetMinute, TargetSecond):
+						# !!!! We apparently missed our target time
+						IbViewUtilities.AddLineToTextWindow(f'Missed target {InputYear}-{InputMonth}-{InputDay}@{TargetHour}:{TargetMinute}:{TargetSecond}')
+					else:
+						# This is one of those "in-between" input entries
+						Accumulator += InputValue
+						Count += 1
 		InputFile.close()
-	OutputFile.close()
+	AveragingOutputFile.close()
+	SamplingOutputFile.close()
+
+def WriteToScaledOutputFile(oFile, oYear, oMonth, oDay, oHour, oMinute, oSecond, oValue):
+	print(f'{oYear}, {oMonth}, {oDay}, {oHour}, {oMinute}, {oSecond}, {oValue}', file=oFile)
+
+def IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds):
+	WorkingHour = OutputHour
+	WorkingMinute = OutputMinute
+	WorkingSecond = OutputSecond
+	WorkingSecond += DeltaSeconds
+	if WorkingSecond > 59:
+		WorkingMinute += 1
+		WorkingSecond -= 60
+	WorkingMinute += DeltaMinutes
+	if WorkingMinute > 59:
+		WorkingHour += 1
+		WorkingMinute -= 60
+	WorkingHour += DeltaHours
+	return WorkingHour, WorkingMinute, WorkingSecond
+
+def TimesAreEqual(Hour1, Minute1, Second1, Hour2, Minute2, Second2):
+	# Return True if there is 5 seconds or less difference between the two times provided
+	TotalSeconds1 = 3600 * Hour1 + 60 * Minute1 + Second1
+	TotalSeconds2 = 3600 * Hour2 + 60 * Minute2 + Second2
+	if abs(TotalSeconds1 - TotalSeconds2) <= 5:
+		return True
+	else:
+		return False
+
+def Time1IsAfterTime2(Hour1, Minute1, Second1, Hour2, Minute2, Second2):
+	# Return True if time1 is more than 5 seconds later than time2
+	TotalSeconds1 = 3600 * Hour1 + 60 * Minute1 + Second1
+	TotalSeconds2 = 3600 * Hour2 + 60 * Minute2 + Second2
+	if TotalSeconds1 - TotalSeconds2 > 5:
+		return True
+	else:
+		return False
+
+
