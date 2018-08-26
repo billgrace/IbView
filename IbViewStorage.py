@@ -290,7 +290,8 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 				WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
 				WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
 				# Initialize interval recognition
-				TargetHour, TargetMinute, TargetSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+				# TargetHour, TargetMinute, TargetSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+				OutputHour, OutputMinute, OutputSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
 				# Initialize averaging
 				Accumulator = 0.0
 				Count = 0
@@ -306,19 +307,15 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 				break
 			else:
 				# This is beyond the first entry but not yet at the last entry in the input file
-				if TimesAreEqual(InputHour, InputMinute, InputSecond, TargetHour, TargetMinute, TargetSecond):
+				if TimesAreEqual(InputHour, InputMinute, InputSecond, OutputHour, OutputMinute, OutputSecond):
 					# This input file entry falls on (well.... close enough to) a time that is to be included in the output file
-					# ... Move our interval recognition to the next target
-					OutputHour = TargetHour
-					OutputMinute = TargetMinute
-					OutputSecond = TargetSecond
-					TargetHour, TargetMinute, TargetSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
 					# The sampling output file always gets written to here
 					WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
 					# The averaging output file gets written lagging behind since the average value includes the band of input values both before AND after the output time
 					LaggingHour = OutputHour
 					LaggingMinute = OutputMinute
 					LaggingSecond = OutputSecond
+					OutputHour, OutputMinute, OutputSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
 					if WaitingForSecondSamplePoint:
 						# The lagging average handling means we have to skip past one output average write
 						WaitingForSecondSamplePoint = False
@@ -333,19 +330,22 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 				else:
 					# This input file entry falls between the times that are to be included in the output file
 					# ??? Possible error if we've passed the target time without coming close enough to it.
-					if Time1IsAfterTime2(InputHour, InputMinute, InputSecond, TargetHour, TargetMinute, TargetSecond):
+					if Time1IsAfterTime2(InputHour, InputMinute, InputSecond, OutputHour, OutputMinute, OutputSecond):
 						# !!!! We apparently missed our target time
-						IbViewUtilities.AddLineToTextWindow(f'Missed target {InputYear}-{InputMonth}-{InputDay}@{TargetHour}:{TargetMinute}:{TargetSecond}')
+						IbViewUtilities.AddLineToTextWindow(f'Missed target {InputYear}-{InputMonth}-{InputDay}@{OutputHour}:{OutputMinute}:{OutputSecond}')
 					else:
 						# This is one of those "in-between" input entries
 						Accumulator += InputValue
 						Count += 1
 		InputFile.close()
+
+		return
+
 	AveragingOutputFile.close()
 	SamplingOutputFile.close()
 
 def WriteToScaledOutputFile(oFile, oYear, oMonth, oDay, oHour, oMinute, oSecond, oValue):
-	print(f'{oYear}, {oMonth}, {oDay}, {oHour}, {oMinute}, {oSecond}, {oValue}', file=oFile)
+	print(f'{oYear}, {oMonth}, {oDay}, {oHour}, {oMinute}, {oSecond}, {oValue:.2f}', file=oFile)
 
 def IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds):
 	WorkingHour = OutputHour
