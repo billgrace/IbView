@@ -277,6 +277,10 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 		OutputHour = 6
 		OutputMinute = 30
 		OutputSecond = 0
+		# End when we get to 1:00
+		EndHour = 13
+		EndMinute = 0
+		EndSecond = 0
 
 		# Traverse the lines in the current input file
 		for InputFileLine in InputFile:
@@ -297,25 +301,13 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 				Count = 0
 				SavedAccumulator = 0.0
 				SavedCount = 0
-			elif OutputHour == 13 and OutputMinute == 0 and OutputSecond == 0:
-				# This is the last input file entry....
-				# Write out the last average value
-				# Write out the last input file entry to both files
-				WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
-				WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
-				# Move on to the next input file
-				break
 			else:
-				# This is beyond the first entry but not yet at the last entry in the input file
+				# This is beyond the first entry
 				if TimesAreEqual(InputHour, InputMinute, InputSecond, OutputHour, OutputMinute, OutputSecond):
 					# This input file entry falls on (well.... close enough to) a time that is to be included in the output file
 					# The sampling output file always gets written to here
 					WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
-					# The averaging output file gets written lagging behind since the average value includes the band of input values both before AND after the output time
-					LaggingHour = OutputHour
-					LaggingMinute = OutputMinute
-					LaggingSecond = OutputSecond
-					OutputHour, OutputMinute, OutputSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+					# The averaging output file wants to write the average of the last TWO intervals out as the value for the PREVIOUS time
 					if WaitingForSecondSamplePoint:
 						# The lagging average handling means we have to skip past one output average write
 						WaitingForSecondSamplePoint = False
@@ -323,10 +315,23 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 						# We're at least up to the third time point in the input file so we write the average for the previous time point into the output file
 						AverageValue = (Accumulator + SavedAccumulator) / (Count + SavedCount)
 						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, LaggingHour, LaggingMinute, LaggingSecond, AverageValue)
-					SavedAccumulator = Accumulator + InputValue
-					SavedCount = Count + 1
-					Accumulator = 0.0
-					Count = 0
+					# Is this the last sample point (1:00)?
+					if TimesAreEqual(EndHour, EndMinute, EndSecond, OutputHour, OutputMinute, OutputSecond):
+						# This is the last time point so....
+						# 1) Write the final entry into the averaging file as just the plain value at 1:00
+						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+						# 2) Move on to the next input file (hmmmm, sort of redundant to the file's eof... not entirely sure how this will interact with the above "for InputFileLin")
+						break
+					else:
+						# update things for processing the next interval
+						LaggingHour = OutputHour
+						LaggingMinute = OutputMinute
+						LaggingSecond = OutputSecond
+						OutputHour, OutputMinute, OutputSecond = IncrementOutputTime(OutputHour, OutputMinute, OutputSecond, DeltaHours, DeltaMinutes, DeltaSeconds)
+						SavedAccumulator = Accumulator + InputValue
+						SavedCount = Count + 1
+						Accumulator = 0.0
+						Count = 0
 				else:
 					# This input file entry falls between the times that are to be included in the output file
 					# ??? Possible error if we've passed the target time without coming close enough to it.
@@ -338,9 +343,6 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 						Accumulator += InputValue
 						Count += 1
 		InputFile.close()
-
-		return
-
 	AveragingOutputFile.close()
 	SamplingOutputFile.close()
 
