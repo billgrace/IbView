@@ -120,7 +120,11 @@ def Scale():
 	SharedVars.GuiWindow.update()
 
 def Shape():
+	IbViewUtilities.EmptyTextWindow()
+	IbViewStorage.ShapeAllScaledData()
 	SharedVars.GuiLastShapedDateLabel.configure(text = f'Last shaped date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastShapedDate)}')
+	IbViewUtilities.AddLineToTextWindow('Shaping is finished')
+	SharedVars.GuiWindow.update()
 
 def GuiShowDevelopmentMessage(Text):
 	SharedVars.GuiDevelopmentMessageLabel.configure(text=Text)

@@ -250,9 +250,9 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 		else:
 			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
 	# Set up an file for averaging and another for sampling
-	AveragingOutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}A.csv'
+	AveragingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalName}-A.csv'
 	AveragingOutputFile = open(SharedVars.ScaledDataPath + '/' + AveragingOutputFileName, 'wt')
-	SamplingOutputFileName = f'SPX{str(IntervalQuantity)}{IntervalName}S.csv'
+	SamplingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalName}-S.csv'
 	SamplingOutputFile = open(SharedVars.ScaledDataPath + '/' + SamplingOutputFileName, 'wt')
 	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
 	# Traverse the list of input files
@@ -388,4 +388,17 @@ def Time1IsAfterTime2(Hour1, Minute1, Second1, Hour2, Minute2, Second2):
 	else:
 		return False
 
-
+def ShapeAllScaledData():
+	InputFileNameList = sorted(os.listdir(SharedVars.ScaledDataPath))
+	# Traverse the list of input files
+	for InputFileName in InputFileNameList:
+		if InputFileName[-4:] != '.csv':
+			print(f'Unexpected input file not ending in .csf: {InputFileName}')
+		else:
+			InputFileNameParts = InputFileName[:-4].split('-')
+			if InputFileNameParts[0] != 'SPX':
+				print(f'Unexpected input file not starting with SPX: {InputFileName}')
+			else:
+				InputFile = open(SharedVars.ScaledDataPath + '/' + InputFileName, 'rt')
+				print(f'Opened input file: {InputFileName} with interval: {InputFileNameParts[1]}-{InputFileNameParts[2]} and AS letter: {InputFileNameParts[3]}')
+				InputFile.close()
