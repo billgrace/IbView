@@ -101,16 +101,16 @@ def Filter():
 	SharedVars.GuiWindow.update()
 
 def ScaleAllIntervals():
-	# IbViewStorage.ScaleUnderlying('Second', 20)
-	# IbViewStorage.ScaleUnderlying('Second', 30)
-	# IbViewStorage.ScaleUnderlying('Second', 40)
-	# IbViewStorage.ScaleUnderlying('Minute', 1)
-	# IbViewStorage.ScaleUnderlying('Minute', 5)
-	# IbViewStorage.ScaleUnderlying('Minute', 10)
-	# IbViewStorage.ScaleUnderlying('Minute', 15)
+	IbViewStorage.ScaleUnderlying('Second', 20)
+	IbViewStorage.ScaleUnderlying('Second', 30)
+	IbViewStorage.ScaleUnderlying('Second', 40)
+	IbViewStorage.ScaleUnderlying('Minute', 1)
+	IbViewStorage.ScaleUnderlying('Minute', 5)
+	IbViewStorage.ScaleUnderlying('Minute', 10)
+	IbViewStorage.ScaleUnderlying('Minute', 15)
 	IbViewStorage.ScaleUnderlying('Minute', 30)
-	# IbViewStorage.ScaleUnderlying('Hour', 1)
-	# IbViewStorage.ScaleUnderlying('Hour', 2)
+	IbViewStorage.ScaleUnderlying('Hour', 1)
+	IbViewStorage.ScaleUnderlying('Hour', 2)
 
 def Scale():
 	IbViewUtilities.EmptyTextWindow()

@@ -219,6 +219,7 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 	DeltaSeconds = 0
 	DeltaMinutes = 0
 	DeltaHours = 0
+	ExpectedInputLinesPerInterval = 0
 	if IntervalName == 'Second':
 		if IntervalQuantity == 20:
 			DeltaSeconds = 20
@@ -303,11 +304,15 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 				SavedCount = 0
 			else:
 				# This is beyond the first entry
-				if TimesAreEqual(InputHour, InputMinute, InputSecond, OutputHour, OutputMinute, OutputSecond):
-					# This input file entry falls on (well.... close enough to) a time that is to be included in the output file
-					# The sampling output file always gets written to here
-					WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
+				TargetTimeReached = TimesAreEqual(InputHour, InputMinute, InputSecond, OutputHour, OutputMinute, OutputSecond)
+				EndOfInputDayReached = TimesAreEqual(InputHour, InputMinute, InputSecond, EndHour, EndMinute, EndSecond)
+				if TargetTimeReached or EndOfInputDayReached:
+					# This input file entry falls on (well.... close enough to) the next target time or the end of the input day so
+					#  the sampling output file gets written
+					if not EndOfInputDayReached:
+						WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
 					# The averaging output file wants to write the average of the last TWO intervals out as the value for the PREVIOUS time
+					#  ... so we have to skip the past the first sampling point before we start writing out average values
 					if WaitingForSecondSamplePoint:
 						# The lagging average handling means we have to skip past one output average write
 						WaitingForSecondSamplePoint = False
@@ -316,11 +321,12 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 						AverageValue = (Accumulator + SavedAccumulator) / (Count + SavedCount)
 						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, LaggingHour, LaggingMinute, LaggingSecond, AverageValue)
 					# Is this the last sample point (1:00)?
-					if TimesAreEqual(EndHour, EndMinute, EndSecond, OutputHour, OutputMinute, OutputSecond):
-						# This is the last time point so....
-						# 1) Write the final entry into the averaging file as just the plain value at 1:00
-						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, OutputHour, OutputMinute, OutputSecond, InputValue)
-						# 2) Move on to the next input file (hmmmm, sort of redundant to the file's eof... not entirely sure how this will interact with the above "for InputFileLin")
+					if EndOfInputDayReached:
+						# # This is the last time point so....
+						# # 1) Write the final entry into both the  files as just the plain value at 1:00
+						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, EndHour, EndMinute, EndSecond, InputValue)
+						WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, EndHour, EndMinute, EndSecond, InputValue)
+						# # 2) Move on to the next input file (hmmmm, sort of redundant to the file's eof... not entirely sure how this will interact with the above "for InputFileLin")
 						break
 					else:
 						# update things for processing the next interval
