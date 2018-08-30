@@ -214,13 +214,13 @@ def FilterUnderlyingDate(date):
 	InputFile.close()
 	OutputFile.close()
 
-def ScaleUnderlying(IntervalName, IntervalQuantity):
-	# Convert the given interval for use in looping through the input files
+def ScaleUnderlying(IntervalUnit, IntervalQuantity):
+	# Convert the given interval for use in scanning the input files
 	DeltaSeconds = 0
 	DeltaMinutes = 0
 	DeltaHours = 0
 	ExpectedInputLinesPerInterval = 0
-	if IntervalName == 'Second':
+	if IntervalUnit == 'Second':
 		if IntervalQuantity == 20:
 			DeltaSeconds = 20
 		elif IntervalQuantity == 30:
@@ -229,7 +229,7 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 			DeltaSeconds = 40
 		else:
 			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
-	elif IntervalName == 'Minute':
+	elif IntervalUnit == 'Minute':
 		if IntervalQuantity == 1:
 			DeltaMinutes = 1
 		elif IntervalQuantity == 5:
@@ -242,7 +242,7 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 			DeltaMinutes = 30
 		else:
 			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Minutes')
-	elif IntervalName == 'Hour':
+	elif IntervalUnit == 'Hour':
 		if IntervalQuantity == 1:
 			DeltaHours = 1
 		elif IntervalQuantity == 2:
@@ -250,9 +250,9 @@ def ScaleUnderlying(IntervalName, IntervalQuantity):
 		else:
 			IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
 	# Set up an file for averaging and another for sampling
-	AveragingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalName}-A.csv'
+	AveragingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalUnit}-A.csv'
 	AveragingOutputFile = open(SharedVars.ScaledDataPath + '/' + AveragingOutputFileName, 'wt')
-	SamplingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalName}-S.csv'
+	SamplingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalUnit}-S.csv'
 	SamplingOutputFile = open(SharedVars.ScaledDataPath + '/' + SamplingOutputFileName, 'wt')
 	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
 	# Traverse the list of input files
@@ -400,5 +400,94 @@ def ShapeAllScaledData():
 				print(f'Unexpected input file not starting with SPX: {InputFileName}')
 			else:
 				InputFile = open(SharedVars.ScaledDataPath + '/' + InputFileName, 'rt')
-				print(f'Opened input file: {InputFileName} with interval: {InputFileNameParts[1]}-{InputFileNameParts[2]} and AS letter: {InputFileNameParts[3]}')
+				IntervalQuantity = int(InputFileNameParts[1])
+				IntervalUnit = InputFileNameParts[2]
+				ASLetter = InputFileNameParts[3]
+
+				print(f'Filename: {InputFileName}, IntervalQuantity: {IntervalQuantity}, IntervalUnit: {IntervalUnit}')
+
+				GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S.csv'
+				GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L.csv'
+				SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S.csv'
+				SemiGenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-L.csv'
+				ParticularSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-S.csv'
+				ParticularLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-L.csv'
+				GenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericSampleOutputFileName, 'wt')
+				GenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericLabelOutputFileName, 'wt')
+				SemiGenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericSampleOutputFileName, 'wt')
+				SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
+				ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
+				ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
+				# Convert the given interval for use in scanning the input files
+				NumberOfInputLinesPerDay = 0
+				NumberOfInputLinesTo11AM = 0
+				CheckHour = 0
+				CheckMinute = 0
+				if IntervalUnit == 'Second':
+					if IntervalQuantity == 20:
+						NumberOfInputLinesPerDay = 1158
+						NumberOfInputLinesTo11AM = 802
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity == 30:
+						NumberOfInputLinesPerDay = 755
+						NumberOfInputLinesTo11AM = 523
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity == 40:
+						NumberOfInputLinesPerDay = 586
+						NumberOfInputLinesTo11AM = 406
+						CheckHour = 11
+						CheckMinute = 0
+					else:
+						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
+				elif IntervalUnit == 'Minute':
+					if IntervalQuantity == 1:
+						NumberOfInputLinesPerDay = 391
+						NumberOfInputLinesTo11AM = 271
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity == 5:
+						NumberOfInputLinesPerDay = 79
+						NumberOfInputLinesTo11AM = 55
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity == 10:
+						NumberOfInputLinesPerDay = 40
+						NumberOfInputLinesTo11AM = 28
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity == 15:
+						NumberOfInputLinesPerDay = 27
+						NumberOfInputLinesTo11AM = 19
+						CheckHour = 11
+						CheckMinute = 0
+					elif IntervalQuantity ==30:
+						NumberOfInputLinesPerDay = 14
+						NumberOfInputLinesTo11AM = 10
+						CheckHour = 11
+						CheckMinute = 0
+					else:
+						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Minutes')
+				elif IntervalUnit == 'Hour':
+					if IntervalQuantity == 1:
+						NumberOfInputLinesPerDay = 8
+						NumberOfInputLinesTo11AM = 5
+						CheckHour = 10
+						CheckMinute = 30
+					elif IntervalQuantity == 2:
+						NumberOfInputLinesPerDay = 5
+						NumberOfInputLinesTo11AM = 3
+						CheckHour = 10
+						CheckMinute = 30
+					else:
+						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
+				NumberOfInputLinesFrom11AMToTomorrowClose = 2 * NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
+				print(f'Interval: {IntervalQuantity}{IntervalUnit}, per day: {NumberOfInputLinesPerDay}, to 11: {NumberOfInputLinesTo11AM}, 11 to close: {NumberOfInputLinesFrom11AMToTomorrowClose}')
+				GenericSampleOutputFile.close()
+				GenericLabelOutputFile.close()
+				SemiGenericSampleOutputFile.close()
+				SemiGenericLabelOutputFile.close()
+				ParticularSampleOutputFile.close()
+				ParticularLabelOutputFile.close()
 				InputFile.close()
