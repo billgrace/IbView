@@ -24,16 +24,18 @@ def ReadPreferencesFile():
 				UnstrippedKeyWord, UnstrippedKeyValue = Line.split('=')
 				KeyWord = UnstrippedKeyWord.strip()
 				KeyValue = UnstrippedKeyValue.strip()
-				if(KeyWord == 'DataFilePath'):
+				if KeyWord == 'DataFilePath':
 					SharedVars.DataFilePath = KeyValue
-				elif(KeyWord == 'SiftedDataPath'):
+				elif KeyWord == 'SiftedDataPath':
 					SharedVars.SiftedDataPath = KeyValue
-				elif(KeyWord == 'FilteredDataPath'):
+				elif KeyWord == 'FilteredDataPath':
 					SharedVars.FilteredDataPath = KeyValue
-				elif(KeyWord == 'ScaledDataPath'):
+				elif KeyWord == 'ScaledDataPath':
 					SharedVars.ScaledDataPath = KeyValue
-				elif(KeyWord == 'ShapedDataPath'):
+				elif KeyWord == 'ShapedDataPath':
 					SharedVars.ShapedDataPath = KeyValue
+				elif KeyWord == 'NumberOfDaysInASample':
+					SharedVars.NumberOfDaysInASample = int(KeyValue)
 				else:
 					IbViewUtilities.LogError('unrecognized preference.cfg KeyWord: ' + KeyWord + ' on line #' + str(LineNumber))
 			except Exception as e:
@@ -403,18 +405,6 @@ def ShapeAllScaledData():
 				IntervalQuantity = int(InputFileNameParts[1])
 				IntervalUnit = InputFileNameParts[2]
 				ASLetter = InputFileNameParts[3]
-				GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S.csv'
-				GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L.csv'
-				SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S.csv'
-				SemiGenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-L.csv'
-				ParticularSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-S.csv'
-				ParticularLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-L.csv'
-				GenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericSampleOutputFileName, 'wt')
-				GenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericLabelOutputFileName, 'wt')
-				SemiGenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericSampleOutputFileName, 'wt')
-				SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
-				ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
-				ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
 				# Convert the given interval for use in scanning the input files
 				NumberOfInputLinesPerDay = 0
 				NumberOfInputLinesTo11AM = 0
@@ -479,24 +469,64 @@ def ShapeAllScaledData():
 						CheckMinute = 30
 					else:
 						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
+				# How many elements will go into a sample vector?
+				SampleVectorLength = (SharedVars.NumberOfDaysInASample - 1) * NumberOfInputLinesPerDay + NumberOfInputLinesTo11AM
+				# How many input lines will be skipped between the end of the sample vector (11:00 today) to the corresponding label (1:00 tomorrow)
 				NumberOfInputLinesFrom11AMToTomorrowClose = 2 * NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
-				print(f'Interval: {IntervalQuantity}{IntervalUnit}, per day: {NumberOfInputLinesPerDay}, to 11: {NumberOfInputLinesTo11AM}, 11 to close: {NumberOfInputLinesFrom11AMToTomorrowClose}')
-				FirstLine = ''
-				LastLine = ''
-				ElevenOclickLine = ''
-				TomorrowCloseLine = ''
-				LineCounter = 0
+				# How many input lines to encompass a sample vector all the way to the corresponding label?
+				# ... 20 days + 1 more day to get to the desired "tomorrow close"
+				NmberOfInputLinesInCompleteOutputBuffer = (SharedVars.NumberOfDaysInASample + 1) * NumberOfInputLinesPerDay
+				# A buffer to hold all the sequential values from the first in an input vector through the corresponding label value
+				GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S-{SampleVectorLength}.csv'
+				GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L-{SampleVectorLength}.csv'
+				SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S-{SampleVectorLength}.csv'
+				SemiGenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-L-{SampleVectorLength}.csv'
+				ParticularSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-S-{SampleVectorLength}.csv'
+				ParticularLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-L-{SampleVectorLength}.csv'
+				GenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericSampleOutputFileName, 'wt')
+				GenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericLabelOutputFileName, 'wt')
+				SemiGenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericSampleOutputFileName, 'wt')
+				SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
+				ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
+				ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
+				OutputValueStorage = []
+				InputLineCounter = 0
+				IbViewUtilities.AddLineToTextWindow(f'Shaping {IntervalQuantity} {IntervalUnit} {ASLetter}')
+				SharedVars.GuiWindow.update()
 				for InputFileLine in InputFile:
-					LineCounter += 1
-					if LineCounter == 1:
-						FirstLine = InputFileLine
-					if LineCounter == NumberOfInputLinesPerDay:
-						LastLine = InputFileLine
-					if LineCounter == NumberOfInputLinesTo11AM:
-						ElevenOclickLine = InputFileLine
-					if LineCounter == NumberOfInputLinesTo11AM + NumberOfInputLinesFrom11AMToTomorrowClose:
-						TomorrowCloseLine = InputFileLine
-				print(f'FirstLine: {FirstLine}, LastLine: {LastLine}, 11 oclock line: {ElevenOclickLine}, tomorrow close: {TomorrowCloseLine}')
+					InputLineCounter += 1
+					InputLineParts = InputFileLine.rstrip('\n').split(',')
+					InputLineYear = InputLineParts[0]
+					InputLineMonth = InputLineParts[1]
+					InputLineDay = InputLineParts[2]
+					InputLineHour = InputLineParts[3]
+					InputLineMinute = InputLineParts[4]
+					InputLineSecond = InputLineParts[5]
+					InputLineValueString = InputLineParts[6]
+					# add the next input value to the end of the buffer
+					OutputValueStorage.append(InputLineValueString)
+					if len(OutputValueStorage) == NmberOfInputLinesInCompleteOutputBuffer:
+						# There are enough values in the buffer to make an output sample and label so...
+						# 1) Build a sample vector and label set
+						OutputLabelString = OutputValueStorage[-1]
+						OutputSampleString = ''
+						for SampleIndex in range(SampleVectorLength - 1):
+							OutputSampleString += OutputValueStorage[SampleIndex] + ', '
+						OutputSampleString += OutputValueStorage[SampleVectorLength - 1]
+						# 2) Write the sample and label to their output files
+						# Write ALL samples and labels to the generic files
+						print(f'{OutputSampleString}', file = GenericSampleOutputFile)
+						print(f'{OutputLabelString}', file = GenericLabelOutputFile)
+						# If the label time is 1:00 PM then this is a semi-generic data set so write it to those files, too
+						if int(InputLineHour) == 13 and int(InputLineMinute) == 0:
+							print(f'{OutputSampleString}', file = SemiGenericSampleOutputFile)
+							print(f'{OutputLabelString}', file = SemiGenericLabelOutputFile)
+							# If this is a semi-generic data set AND the label value is from a date that's an SPX expiration date, then it's also "particular"
+							if IbViewUtilities.DateIsAnSpxExpirationDay(datetime.date(int(InputLineYear), int(InputLineMonth), int(InputLineDay))):
+								print(f'{OutputSampleString}', file = ParticularSampleOutputFile)
+								print(f'{OutputLabelString}', file = ParticularLabelOutputFile)
+						# Remove the first element from the beginning to make room for the next one at the end
+						del OutputValueStorage[0]
 				GenericSampleOutputFile.close()
 				GenericLabelOutputFile.close()
 				SemiGenericSampleOutputFile.close()

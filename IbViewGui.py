@@ -121,6 +121,7 @@ def Scale():
 
 def Shape():
 	IbViewUtilities.EmptyTextWindow()
+	SharedVars.GuiWindow.update()
 	IbViewStorage.ShapeAllScaledData()
 	SharedVars.GuiLastShapedDateLabel.configure(text = f'Last shaped date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastShapedDate)}')
 	IbViewUtilities.AddLineToTextWindow('Shaping is finished')

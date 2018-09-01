@@ -26,6 +26,7 @@ NumberOfUnderlyingAvroFiles = 0
 NumberOfOptionJsonFiles = 0
 NumberOfOptionAvroFiles = 0
 NumberOfOtherFiles = 0
+NumberOfDaysInASample = 20
 
 # Sift, Filter, Scale, Shape
 SiftedDataPath = ''
