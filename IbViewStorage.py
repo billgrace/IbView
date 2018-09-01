@@ -326,7 +326,7 @@ def ScaleUnderlying(IntervalUnit, IntervalQuantity):
 						# # 1) Write the final entry into both the  files as just the plain value at 1:00
 						WriteToScaledOutputFile(AveragingOutputFile, InputYear, InputMonth, InputDay, EndHour, EndMinute, EndSecond, InputValue)
 						WriteToScaledOutputFile(SamplingOutputFile, InputYear, InputMonth, InputDay, EndHour, EndMinute, EndSecond, InputValue)
-						# # 2) Move on to the next input file (hmmmm, sort of redundant to the file's eof... not entirely sure how this will interact with the above "for InputFileLin")
+						# # 2) Move on to the next input file (hmmmm, sort of redundant to the file's eof... not entirely sure how this will interact with the above "for InputFileLine")
 						break
 					else:
 						# update things for processing the next interval
@@ -403,9 +403,6 @@ def ShapeAllScaledData():
 				IntervalQuantity = int(InputFileNameParts[1])
 				IntervalUnit = InputFileNameParts[2]
 				ASLetter = InputFileNameParts[3]
-
-				print(f'Filename: {InputFileName}, IntervalQuantity: {IntervalQuantity}, IntervalUnit: {IntervalUnit}')
-
 				GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S.csv'
 				GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L.csv'
 				SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S.csv'
@@ -425,13 +422,13 @@ def ShapeAllScaledData():
 				CheckMinute = 0
 				if IntervalUnit == 'Second':
 					if IntervalQuantity == 20:
-						NumberOfInputLinesPerDay = 1158
-						NumberOfInputLinesTo11AM = 802
+						NumberOfInputLinesPerDay = 1171
+						NumberOfInputLinesTo11AM = 811
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 30:
-						NumberOfInputLinesPerDay = 755
-						NumberOfInputLinesTo11AM = 523
+						NumberOfInputLinesPerDay = 781
+						NumberOfInputLinesTo11AM = 541
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 40:
@@ -484,6 +481,22 @@ def ShapeAllScaledData():
 						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
 				NumberOfInputLinesFrom11AMToTomorrowClose = 2 * NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
 				print(f'Interval: {IntervalQuantity}{IntervalUnit}, per day: {NumberOfInputLinesPerDay}, to 11: {NumberOfInputLinesTo11AM}, 11 to close: {NumberOfInputLinesFrom11AMToTomorrowClose}')
+				FirstLine = ''
+				LastLine = ''
+				ElevenOclickLine = ''
+				TomorrowCloseLine = ''
+				LineCounter = 0
+				for InputFileLine in InputFile:
+					LineCounter += 1
+					if LineCounter == 1:
+						FirstLine = InputFileLine
+					if LineCounter == NumberOfInputLinesPerDay:
+						LastLine = InputFileLine
+					if LineCounter == NumberOfInputLinesTo11AM:
+						ElevenOclickLine = InputFileLine
+					if LineCounter == NumberOfInputLinesTo11AM + NumberOfInputLinesFrom11AMToTomorrowClose:
+						TomorrowCloseLine = InputFileLine
+				print(f'FirstLine: {FirstLine}, LastLine: {LastLine}, 11 oclock line: {ElevenOclickLine}, tomorrow close: {TomorrowCloseLine}')
 				GenericSampleOutputFile.close()
 				GenericLabelOutputFile.close()
 				SemiGenericSampleOutputFile.close()
