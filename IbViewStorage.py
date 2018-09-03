@@ -2,6 +2,7 @@ import sys
 import os
 import io
 import datetime
+import math
 import avro.datafile
 import avro.io
 
@@ -508,7 +509,37 @@ def ShapeAllScaledData():
 					if len(OutputValueStorage) == NmberOfInputLinesInCompleteOutputBuffer:
 						# There are enough values in the buffer to make an output sample and label so...
 						# 1) Build a sample vector and label set
-						OutputLabelString = OutputValueStorage[-1]
+						#  A) Label(s) are four elements: the tomorrow close value plus three variations of proper integer labels
+						ElevenOclockValue = float(OutputValueStorage[SampleVectorLength - 1])
+						TomorrowCloseValue = float(OutputValueStorage[-1])
+						FiveDollarRailBelowElevenOclockValue = float( ( math.floor(ElevenOclockValue) // 5 ) * 5 )
+						FiveDollarRailAboveElevenOclockValue = FiveDollarRailBelowElevenOclockValue + 5.0
+						TenDollarRailBelowElevenOclockValue = FiveDollarRailBelowElevenOclockValue - 5.0
+						TenDollarRailAboveElevenOclockValue = FiveDollarRailAboveElevenOclockValue + 5.0
+						# Figure the simple binary "above/below" label
+						if TomorrowCloseValue > ElevenOclockValue:
+							Label1String = '1'
+						else:
+							Label1String = '-1'
+						# Figure the labels for "above/below/within" the $5 band
+						if TomorrowCloseValue > FiveDollarRailAboveElevenOclockValue:
+							Label2String = '1'
+							Label3String = '1'
+						elif TomorrowCloseValue < FiveDollarRailBelowElevenOclockValue:
+							Label2String = '-1'
+							Label3String = '-1'
+						else:
+							Label2String = '0'
+							Label3String = '0'
+						# Check if the above/below is more than $5 above or below the $5 band
+						if TomorrowCloseValue > TenDollarRailAboveElevenOclockValue:
+							Label3String = '2'
+						elif TomorrowCloseValue < TenDollarRailBelowElevenOclockValue:
+							Label3String = '-2'
+						else:
+							pass
+						OutputLabelString = f'{OutputValueStorage[-1]}, {Label1String}, {Label2String}, {Label3String}'
+						#  B) Sample vector is values for previous 19 days plus 20th day values up to 11:00
 						OutputSampleString = ''
 						for SampleIndex in range(SampleVectorLength - 1):
 							OutputSampleString += OutputValueStorage[SampleIndex] + ', '
