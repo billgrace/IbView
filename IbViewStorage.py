@@ -490,6 +490,18 @@ def ShapeAllScaledData():
 				SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
 				ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
 				ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
+				# Pandas read_csv is pretty cranky if there's no first line with column labels...
+				SampleFileColumnNames = ''
+				for i in range (SampleVectorLength - 1):
+					SampleFileColumnNames += f't({str(i - SampleVectorLength + 1)}), '
+				SampleFileColumnNames += 't(0)'
+				print(f'{SampleFileColumnNames}',file=GenericSampleOutputFile)
+				print(f'{SampleFileColumnNames}',file=SemiGenericSampleOutputFile)
+				print(f'{SampleFileColumnNames}',file=ParticularSampleOutputFile)
+				LabelFileColumnNames = 'value, 2-out, 3-out, 5-out'
+				print(f'{LabelFileColumnNames}',file=GenericLabelOutputFile)
+				print(f'{LabelFileColumnNames}',file=SemiGenericLabelOutputFile)
+				print(f'{LabelFileColumnNames}',file=ParticularLabelOutputFile)
 				OutputValueStorage = []
 				InputLineCounter = 0
 				IbViewUtilities.AddLineToTextWindow(f'Shaping {IntervalQuantity} {IntervalUnit} {ASLetter}')
