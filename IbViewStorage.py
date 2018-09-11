@@ -498,7 +498,7 @@ def ShapeAllScaledData():
 				print(f'{SampleFileColumnNames}',file=GenericSampleOutputFile)
 				print(f'{SampleFileColumnNames}',file=SemiGenericSampleOutputFile)
 				print(f'{SampleFileColumnNames}',file=ParticularSampleOutputFile)
-				LabelFileColumnNames = 'value, 2-out, 3-out, 5-out'
+				LabelFileColumnNames = 'value,2-out,3-out,5-out'
 				print(f'{LabelFileColumnNames}',file=GenericLabelOutputFile)
 				print(f'{LabelFileColumnNames}',file=SemiGenericLabelOutputFile)
 				print(f'{LabelFileColumnNames}',file=ParticularLabelOutputFile)
