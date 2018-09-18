@@ -395,6 +395,7 @@ def ShapeAllScaledData():
 	InputFileNameList = sorted(os.listdir(SharedVars.ScaledDataPath))
 	# Traverse the list of input files
 	for InputFileName in InputFileNameList:
+		WriteOutput = True
 		if InputFileName[-4:] != '.csv':
 			print(f'Unexpected input file not ending in .csf: {InputFileName}')
 		else:
@@ -412,6 +413,7 @@ def ShapeAllScaledData():
 				CheckHour = 0
 				CheckMinute = 0
 				if IntervalUnit == 'Second':
+					WriteOutput = False
 					if IntervalQuantity == 20:
 						NumberOfInputLinesPerDay = 1171
 						NumberOfInputLinesTo11AM = 811
@@ -431,21 +433,25 @@ def ShapeAllScaledData():
 						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Seconds')
 				elif IntervalUnit == 'Minute':
 					if IntervalQuantity == 1:
+						WriteOutput = False
 						NumberOfInputLinesPerDay = 391
 						NumberOfInputLinesTo11AM = 271
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 5:
+						WriteOutput = False
 						NumberOfInputLinesPerDay = 79
 						NumberOfInputLinesTo11AM = 55
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 10:
+						WriteOutput = False
 						NumberOfInputLinesPerDay = 40
 						NumberOfInputLinesTo11AM = 28
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 15:
+						WriteOutput = False
 						NumberOfInputLinesPerDay = 27
 						NumberOfInputLinesTo11AM = 19
 						CheckHour = 11
@@ -470,110 +476,136 @@ def ShapeAllScaledData():
 						CheckMinute = 30
 					else:
 						IbViewUtilities.ErrorExit(f'Unexpected scale interval: {IntervalQuantity} Hours')
-				# How many elements will go into a sample vector?
-				SampleVectorLength = (SharedVars.NumberOfDaysInASample - 1) * NumberOfInputLinesPerDay + NumberOfInputLinesTo11AM
-				# How many input lines will be skipped between the end of the sample vector (11:00 today) to the corresponding label (1:00 tomorrow)
-				NumberOfInputLinesFrom11AMToTomorrowClose = 2 * NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
-				# How many input lines to encompass a sample vector all the way to the corresponding label?
-				# ... 20 days + 1 more day to get to the desired "tomorrow close"
-				NmberOfInputLinesInCompleteOutputBuffer = (SharedVars.NumberOfDaysInASample + 1) * NumberOfInputLinesPerDay
-				# A buffer to hold all the sequential values from the first in an input vector through the corresponding label value
-				GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S-{SampleVectorLength}.csv'
-				GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L-{SampleVectorLength}.csv'
-				SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S-{SampleVectorLength}.csv'
-				SemiGenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-L-{SampleVectorLength}.csv'
-				ParticularSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-S-{SampleVectorLength}.csv'
-				ParticularLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-L-{SampleVectorLength}.csv'
-				GenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericSampleOutputFileName, 'wt')
-				GenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericLabelOutputFileName, 'wt')
-				SemiGenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericSampleOutputFileName, 'wt')
-				SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
-				ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
-				ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
-				# Pandas read_csv is pretty cranky if there's no first line with column labels...
-				SampleFileColumnNames = ''
-				for i in range (SampleVectorLength - 1):
-					SampleFileColumnNames += f't({str(i - SampleVectorLength + 1)}), '
-				SampleFileColumnNames += 't(0)'
-				print(f'{SampleFileColumnNames}',file=GenericSampleOutputFile)
-				print(f'{SampleFileColumnNames}',file=SemiGenericSampleOutputFile)
-				print(f'{SampleFileColumnNames}',file=ParticularSampleOutputFile)
-				LabelFileColumnNames = 'value,2-out,3-out,5-out'
-				print(f'{LabelFileColumnNames}',file=GenericLabelOutputFile)
-				print(f'{LabelFileColumnNames}',file=SemiGenericLabelOutputFile)
-				print(f'{LabelFileColumnNames}',file=ParticularLabelOutputFile)
-				OutputValueStorage = []
-				InputLineCounter = 0
-				IbViewUtilities.AddLineToTextWindow(f'Shaping {IntervalQuantity} {IntervalUnit} {ASLetter}')
-				SharedVars.GuiWindow.update()
-				for InputFileLine in InputFile:
-					InputLineCounter += 1
-					InputLineParts = InputFileLine.rstrip('\n').split(',')
-					InputLineYear = InputLineParts[0]
-					InputLineMonth = InputLineParts[1]
-					InputLineDay = InputLineParts[2]
-					InputLineHour = InputLineParts[3]
-					InputLineMinute = InputLineParts[4]
-					InputLineSecond = InputLineParts[5]
-					InputLineValueString = InputLineParts[6]
-					# add the next input value to the end of the buffer
-					OutputValueStorage.append(InputLineValueString)
-					if len(OutputValueStorage) == NmberOfInputLinesInCompleteOutputBuffer:
-						# There are enough values in the buffer to make an output sample and label so...
-						# 1) Build a sample vector and label set
-						#  A) Label(s) are four elements: the tomorrow close value plus three variations of proper integer labels
-						ElevenOclockValue = float(OutputValueStorage[SampleVectorLength - 1])
-						TomorrowCloseValue = float(OutputValueStorage[-1])
-						FiveDollarRailBelowElevenOclockValue = float( ( math.floor(ElevenOclockValue) // 5 ) * 5 )
-						FiveDollarRailAboveElevenOclockValue = FiveDollarRailBelowElevenOclockValue + 5.0
-						TenDollarRailBelowElevenOclockValue = FiveDollarRailBelowElevenOclockValue - 5.0
-						TenDollarRailAboveElevenOclockValue = FiveDollarRailAboveElevenOclockValue + 5.0
-						# Figure the simple binary "above/below" label
-						if TomorrowCloseValue > ElevenOclockValue:
-							Label1String = '1'
-						else:
-							Label1String = '-1'
-						# Figure the labels for "above/below/within" the $5 band
-						if TomorrowCloseValue > FiveDollarRailAboveElevenOclockValue:
-							Label2String = '1'
-							Label3String = '1'
-						elif TomorrowCloseValue < FiveDollarRailBelowElevenOclockValue:
-							Label2String = '-1'
-							Label3String = '-1'
-						else:
-							Label2String = '0'
-							Label3String = '0'
-						# Check if the above/below is more than $5 above or below the $5 band
-						if TomorrowCloseValue > TenDollarRailAboveElevenOclockValue:
-							Label3String = '2'
-						elif TomorrowCloseValue < TenDollarRailBelowElevenOclockValue:
-							Label3String = '-2'
-						else:
-							pass
-						OutputLabelString = f'{OutputValueStorage[-1]}, {Label1String}, {Label2String}, {Label3String}'
-						#  B) Sample vector is values for previous 19 days plus 20th day values up to 11:00
-						OutputSampleString = ''
-						for SampleIndex in range(SampleVectorLength - 1):
-							OutputSampleString += OutputValueStorage[SampleIndex] + ', '
-						OutputSampleString += OutputValueStorage[SampleVectorLength - 1]
-						# 2) Write the sample and label to their output files
-						# Write ALL samples and labels to the generic files
-						print(f'{OutputSampleString}', file = GenericSampleOutputFile)
-						print(f'{OutputLabelString}', file = GenericLabelOutputFile)
-						# If the label time is 1:00 PM then this is a semi-generic data set so write it to those files, too
-						if int(InputLineHour) == 13 and int(InputLineMinute) == 0:
-							print(f'{OutputSampleString}', file = SemiGenericSampleOutputFile)
-							print(f'{OutputLabelString}', file = SemiGenericLabelOutputFile)
-							# If this is a semi-generic data set AND the label value is from a date that's an SPX expiration date, then it's also "particular"
-							if IbViewUtilities.DateIsAnSpxExpirationDay(datetime.date(int(InputLineYear), int(InputLineMonth), int(InputLineDay))):
-								print(f'{OutputSampleString}', file = ParticularSampleOutputFile)
-								print(f'{OutputLabelString}', file = ParticularLabelOutputFile)
-						# Remove the first element from the beginning to make room for the next one at the end
-						del OutputValueStorage[0]
-				GenericSampleOutputFile.close()
-				GenericLabelOutputFile.close()
-				SemiGenericSampleOutputFile.close()
-				SemiGenericLabelOutputFile.close()
-				ParticularSampleOutputFile.close()
-				ParticularLabelOutputFile.close()
+				if WriteOutput:
+					# How many elements will go into a sample vector?
+					SampleVectorLength = (SharedVars.NumberOfDaysInASample - 1) * NumberOfInputLinesPerDay + NumberOfInputLinesTo11AM
+					# How many input lines will be skipped from the end of the sample vector (11:00 today) to the corresponding today label value (1:00 today)
+					NumberOfInputLinesFrom11AMToTodayClose = NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
+					# How many input lines will be skipped from the end of the sample vector (11:00 today) to the corresponding tomorrow label value (1:00 tomorrow)
+					NumberOfInputLinesFrom11AMToTomorrowClose = 2 * NumberOfInputLinesPerDay - NumberOfInputLinesTo11AM
+					# How many input lines to encompass a sample vector all the way to the furthest corresponding label value (tomorrow close)?
+					# ... 20 days + 1 more day to get to the desired "tomorrow close"
+					NumberOfInputLinesInCompleteOutputBuffer = (SharedVars.NumberOfDaysInASample + 1) * NumberOfInputLinesPerDay
+					# A buffer to hold all the sequential values from the first in an input vector through the corresponding label value
+					GenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-S-{SampleVectorLength}.csv'
+					GenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-G-L-{SampleVectorLength}.csv'
+					SemiGenericSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-S-{SampleVectorLength}.csv'
+					SemiGenericLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-g-L-{SampleVectorLength}.csv'
+					ParticularSampleOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-S-{SampleVectorLength}.csv'
+					ParticularLabelOutputFileName = f'SPX-{IntervalQuantity}-{IntervalUnit}-{ASLetter}-P-L-{SampleVectorLength}.csv'
+					GenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericSampleOutputFileName, 'wt')
+					GenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + GenericLabelOutputFileName, 'wt')
+					SemiGenericSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericSampleOutputFileName, 'wt')
+					SemiGenericLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + SemiGenericLabelOutputFileName, 'wt')
+					ParticularSampleOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularSampleOutputFileName, 'wt')
+					ParticularLabelOutputFile = open(SharedVars.ShapedDataPath + '/' + ParticularLabelOutputFileName, 'wt')
+					# Pandas read_csv is pretty cranky if there's no first line with column labels...
+					SampleFileColumnNames = ''
+					for i in range (SampleVectorLength - 1):
+						SampleFileColumnNames += f't({str(i - SampleVectorLength + 1)}), '
+					SampleFileColumnNames += 't(0)'
+					print(f'{SampleFileColumnNames}',file=GenericSampleOutputFile)
+					print(f'{SampleFileColumnNames}',file=SemiGenericSampleOutputFile)
+					print(f'{SampleFileColumnNames}',file=ParticularSampleOutputFile)
+					LabelFileColumnNames = '11 oclock,Today close,Tomorrow close,Today 2,Tomorrow 2,Today 3,Tomorrow 3,Today 5,Tomorrow 5'
+					print(f'{LabelFileColumnNames}',file=GenericLabelOutputFile)
+					print(f'{LabelFileColumnNames}',file=SemiGenericLabelOutputFile)
+					print(f'{LabelFileColumnNames}',file=ParticularLabelOutputFile)
+					OutputValueStorage = []
+					InputLineCounter = 0
+					IbViewUtilities.AddLineToTextWindow(f'Shaping {IntervalQuantity} {IntervalUnit} {ASLetter}')
+					SharedVars.GuiWindow.update()
+					for InputFileLine in InputFile:
+						InputLineCounter += 1
+						InputLineParts = InputFileLine.rstrip('\n').split(',')
+						InputLineYear = InputLineParts[0]
+						InputLineMonth = InputLineParts[1]
+						InputLineDay = InputLineParts[2]
+						InputLineHour = InputLineParts[3]
+						InputLineMinute = InputLineParts[4]
+						InputLineSecond = InputLineParts[5]
+						InputLineValueString = InputLineParts[6]
+						# add the next input value to the end of the buffer
+						OutputValueStorage.append(InputLineValueString)
+						if len(OutputValueStorage) == NumberOfInputLinesInCompleteOutputBuffer:
+							# There are enough values in the buffer to make an output sample and label so...
+							# 1) Build a sample vector and label set
+							#  A) Label(s) are four elements: the tomorrow close value plus three variations of proper integer labels
+							ElevenOclockValueString = OutputValueStorage[SampleVectorLength - 1].strip()
+							TodayCloseValueString = OutputValueStorage[SampleVectorLength + NumberOfInputLinesFrom11AMToTodayClose - 1].strip()
+							TomorrowCloseValueString = OutputValueStorage[-1].strip()
+							ElevenOclockValue = float(ElevenOclockValueString)
+							TodayCloseValue = float(TodayCloseValueString)
+							TomorrowCloseValue = float(TomorrowCloseValueString)
+							FiveDollarRailBelowElevenOclockValue = float( ( math.floor(ElevenOclockValue) // 5 ) * 5 )
+							FiveDollarRailAboveElevenOclockValue = FiveDollarRailBelowElevenOclockValue + 5.0
+							TenDollarRailBelowElevenOclockValue = FiveDollarRailBelowElevenOclockValue - 5.0
+							TenDollarRailAboveElevenOclockValue = FiveDollarRailAboveElevenOclockValue + 5.0
+							# Figure the simple binary "above/below" labels
+							if TodayCloseValue > ElevenOclockValue:
+								Label2TodayString = '1'
+							else:
+								Label2TodayString = '-1'
+							if TomorrowCloseValue > ElevenOclockValue:
+								Label2TomorrowString = '1'
+							else:
+								Label2TomorrowString = '-1'
+							# Figure the labels for "above/below/within" the $5 band
+							if TodayCloseValue > FiveDollarRailAboveElevenOclockValue:
+								Label3TodayString = '1'
+								Label5TodayString = '1'
+							elif TodayCloseValue < FiveDollarRailBelowElevenOclockValue:
+								Label3TodayString = '-1'
+								Label5TodayString = '-1'
+							else:
+								Label3TodayString = '0'
+								Label5TodayString = '0'
+							if TomorrowCloseValue > FiveDollarRailAboveElevenOclockValue:
+								Label3TomorrowString = '1'
+								Label5TomorrowString = '1'
+							elif TomorrowCloseValue < FiveDollarRailBelowElevenOclockValue:
+								Label3TomorrowString = '-1'
+								Label5TomorrowString = '-1'
+							else:
+								Label3TomorrowString = '0'
+								Label5TomorrowString = '0'
+							# Check if the above/below is more than $5 above or below the $5 band
+							if TodayCloseValue > TenDollarRailAboveElevenOclockValue:
+								Label5TodayString = '2'
+							elif TodayCloseValue < TenDollarRailBelowElevenOclockValue:
+								Label5TodayString = '-2'
+							else:
+								pass
+							if TomorrowCloseValue > TenDollarRailAboveElevenOclockValue:
+								Label5TomorrowString = '2'
+							elif TomorrowCloseValue < TenDollarRailBelowElevenOclockValue:
+								Label5TomorrowString = '-2'
+							else:
+								pass
+							OutputLabelString = f'{ElevenOclockValueString},{TodayCloseValueString},{TomorrowCloseValueString},{Label2TodayString},{Label2TomorrowString},{Label3TodayString},{Label3TomorrowString},{Label5TodayString},{Label5TomorrowString}'
+							#  B) Sample vector is values for previous 19 days plus 20th day values up to 11:00
+							OutputSampleString = ''
+							for SampleIndex in range(SampleVectorLength - 1):
+								OutputSampleString += OutputValueStorage[SampleIndex] + ', '
+							OutputSampleString += OutputValueStorage[SampleVectorLength - 1]
+							# 2) Write the sample and label to their output files
+							# Write ALL samples and labels to the generic files
+							print(f'{OutputSampleString}', file = GenericSampleOutputFile)
+							print(f'{OutputLabelString}', file = GenericLabelOutputFile)
+							# If the label time is 1:00 PM then this is a semi-generic data set so write it to those files, too
+							if int(InputLineHour) == 13 and int(InputLineMinute) == 0:
+								print(f'{OutputSampleString}', file = SemiGenericSampleOutputFile)
+								print(f'{OutputLabelString}', file = SemiGenericLabelOutputFile)
+								# If this is a semi-generic data set AND the label value is from a date that's an SPX expiration date, then it's also "particular"
+								if IbViewUtilities.DateIsAnSpxExpirationDay(datetime.date(int(InputLineYear), int(InputLineMonth), int(InputLineDay))):
+									print(f'{OutputSampleString}', file = ParticularSampleOutputFile)
+									print(f'{OutputLabelString}', file = ParticularLabelOutputFile)
+							# Remove the first element from the beginning to make room for the next one at the end
+							del OutputValueStorage[0]
+					GenericSampleOutputFile.close()
+					GenericLabelOutputFile.close()
+					SemiGenericSampleOutputFile.close()
+					SemiGenericLabelOutputFile.close()
+					ParticularSampleOutputFile.close()
+					ParticularLabelOutputFile.close()
 				InputFile.close()
