@@ -31,10 +31,12 @@ NumberOfDaysInASample = 20
 # Sift, Filter, Scale, Shape
 SiftedDataPath = ''
 FilteredDataPath = ''
+CheckedDataPath = ''
 ScaledDataPath = ''
 ShapedDataPath = ''
 LastSiftedDate = datetime.date(2000, 1, 1)
 LastFilteredDate = datetime.date(2000, 1, 1)
+LastCheckedDate = datetime.date(2000, 1, 1)
 LastScaledDate = datetime.date(2000, 1, 1)
 LastShapedDate = datetime.date(2000, 1, 1)
 TotalSiftedDaysAvailable = 0
@@ -55,6 +57,7 @@ GuiFirstValidDateLabel = Label(GuiWindow)
 GuiLastLoggedDateLabel = Label(GuiWindow)
 GuiLastSiftedDateLabel = Label(GuiWindow, text = 'Last sifted date: (---)')
 GuiLastFilteredDateLabel = Label(GuiWindow, text = 'Last filtered date: (---)')
+GuiLastCheckedDateLabel = Label(GuiWindow, text = 'Last checked date: (---)')
 GuiLastScaledDateLabel = Label(GuiWindow, text = 'Last scaled date: (---)')
 GuiLastShapedDateLabel = Label(GuiWindow, text = 'Last shaped date: (---)')
 GuiDevelopmentMessageLabel = Label(GuiWindow, text='(---)', fg='#055', bg='#8ff')
@@ -62,6 +65,7 @@ GuiDevelopmentMessageLabel = Label(GuiWindow, text='(---)', fg='#055', bg='#8ff'
 # Gui - Buttons
 GuiSiftButton = Button(GuiWindow, text='Sift', command=IbViewGui.Sift)
 GuiFilterButton = Button(GuiWindow, text='Filter', command=IbViewGui.Filter)
+GuiCheckButton = Button(GuiWindow, text='Check', command=IbViewGui.Check)
 GuiScaleButton = Button(GuiWindow, text='Scale', command=IbViewGui.Scale)
 GuiShapeButton = Button(GuiWindow, text='Shape', command=IbViewGui.Shape)
 GuiExitButton = Button(GuiWindow, text='Exit', command=IbViewGui.ExitGui)

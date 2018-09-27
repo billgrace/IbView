@@ -5,7 +5,7 @@ import datetime
 import math
 import avro.datafile
 import avro.io
-
+import pandas as pd
 import IbViewEnums
 import IbViewClasses
 import IbViewGui
@@ -31,6 +31,8 @@ def ReadPreferencesFile():
 					SharedVars.SiftedDataPath = KeyValue
 				elif KeyWord == 'FilteredDataPath':
 					SharedVars.FilteredDataPath = KeyValue
+				elif KeyWord == 'CheckedDataPath':
+					SharedVars.CheckedDataPath = KeyValue
 				elif KeyWord == 'ScaledDataPath':
 					SharedVars.ScaledDataPath = KeyValue
 				elif KeyWord == 'ShapedDataPath':
@@ -190,12 +192,12 @@ def FilterUnderlyingDate(date):
 	for CurrentLine in InputFile:
 		KeepThisLine = True
 		FilteringIsComplete = False
-		ThisLineValues = CurrentLine.split(',')
-		ThisHour = int(ThisLineValues[0])
-		ThisMinute = int(ThisLineValues[1])
-		ThisSecond = int(ThisLineValues[2])
-		ThisMillisecond = int(ThisLineValues[3])
-		ThisValue = float(ThisLineValues[4])
+		ThisLineParts = CurrentLine.split(',')
+		ThisHour = int(ThisLineParts[0])
+		ThisMinute = int(ThisLineParts[1])
+		ThisSecond = int(ThisLineParts[2])
+		ThisMillisecond = int(ThisLineParts[3])
+		ThisValue = float(ThisLineParts[4])
 		# Drop times before 6:30 AM
 		if ThisHour < 6:
 			KeepThisLine = False
@@ -216,6 +218,70 @@ def FilterUnderlyingDate(date):
 			break
 	InputFile.close()
 	OutputFile.close()
+
+def CheckUnderlyingDate(date):
+	# Input is the daily filtered files
+	# Output is those same files IF they pass a comparison to
+	#  online open, high, low, close values
+	# For starts, lets insist on comparisons being within 1%
+	FileName = f'SPXprice-{date.year:4}-{date.month:02}-{date.day:02}.csv'
+	InputFile = open(SharedVars.FilteredDataPath + '/' + FileName, 'rt')
+	OurOpenValue = -1.0
+	OurHighValue = -1.0
+	OurLowValue = 1000000.
+	OurCloseValue = 1.0
+	for CurrentLine in InputFile:
+		ThisLineParts = CurrentLine.split(',')
+		ThisValue = float(ThisLineParts[4])
+		# If OpenValue is negative, this must be the first entry which is our opening value
+		if OurOpenValue < 0:
+			OurOpenValue = ThisValue
+		# ALWAYS update the closing value and it will end up being the last one in the file
+		OurCloseValue = ThisValue
+		if ThisValue > OurHighValue:
+			OurHighValue = ThisValue
+		if ThisValue < OurLowValue:
+			OurLowValue = ThisValue
+	InputFile.close()
+	# OK, we now have OUR version of open, high, low, close for the date...
+	# Let's get Yahoo's version
+	DateString = date.strftime('%b %d, %Y')
+	DataFramesInPage = pd.read_html('https://finance.yahoo.com/quote/%5EGSPC/history')
+	SpxHistoryDataFrame = DataFramesInPage[0]
+	DateRowIndex = SpxHistoryDataFrame['Date'] == DateString
+	YahooOpenValue = SpxHistoryDataFrame.loc[DateRowIndex, 'Open'].iat[0]
+	YahooHighValue = SpxHistoryDataFrame.loc[DateRowIndex, 'High'].iat[0]
+	YahooLowValue = SpxHistoryDataFrame.loc[DateRowIndex, 'Low'].iat[0]
+	YahooCloseValue = SpxHistoryDataFrame.loc[DateRowIndex, 'Close*'].iat[0]
+	OpenDifference = abs(YahooOpenValue - OurOpenValue)/OurOpenValue * 100
+	HighDifference = abs(YahooHighValue - OurHighValue)/OurHighValue * 100
+	LowDifference = abs(YahooLowValue - OurLowValue)/OurLowValue * 100
+	CloseDifference = abs(YahooCloseValue - OurCloseValue)/OurCloseValue * 100
+	DifferenceIsAcceptable = True
+	DifferenceString = ''
+	if OpenDifference > 1.0:
+		DifferenceString += f' Open diff: {OpenDifference:0.1f}'
+		DifferenceIsAcceptable = False
+	if HighDifference > 1.0:
+		DifferenceString += f' High diff: {HighDifference:0.1f}'
+		DifferenceIsAcceptable = False
+	if LowDifference > 1.0:
+		DifferenceString += f' Low diff: {LowDifference:0.1f}'
+		DifferenceIsAcceptable = False
+	if CloseDifference > 1.0:
+		DifferenceString += f' Close diff: {CloseDifference:0.1f}'
+		DifferenceIsAcceptable = False
+	if not DifferenceIsAcceptable:
+		# Announce excessive difference to GUI
+		IbViewUtilities.AddLineToTextWindow(DifferenceString)
+	else:
+		# Copy acceptable date file to 'Checked' directory
+		InputFile = open(SharedVars.FilteredDataPath + '/' + FileName, 'rt')
+		OutputFile = open(SharedVars.CheckedDataPath + '/' + FileName, 'wt')
+		for CurrentLine in InputFile:
+			print(CurrentLine, end='', file=OutputFile)
+		OutputFile.close()
+		InputFile.close()
 
 def ScaleUnderlying(IntervalUnit, IntervalQuantity):
 	# Convert the given interval for use in scanning the input files
@@ -257,10 +323,12 @@ def ScaleUnderlying(IntervalUnit, IntervalQuantity):
 	AveragingOutputFile = open(SharedVars.ScaledDataPath + '/' + AveragingOutputFileName, 'wt')
 	SamplingOutputFileName = f'SPX-{str(IntervalQuantity)}-{IntervalUnit}-S.csv'
 	SamplingOutputFile = open(SharedVars.ScaledDataPath + '/' + SamplingOutputFileName, 'wt')
-	InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
+	# InputFileNameList = sorted(os.listdir(SharedVars.FilteredDataPath))
+	InputFileNameList = sorted(os.listdir(SharedVars.CheckedDataPath))
 	# Traverse the list of input files
 	for InputFileName in InputFileNameList:
-		InputFile = open(SharedVars.FilteredDataPath + '/' + InputFileName, 'rt')
+		# InputFile = open(SharedVars.FilteredDataPath + '/' + InputFileName, 'rt')
+		InputFile = open(SharedVars.CheckedDataPath + '/' + InputFileName, 'rt')
 		# For each input file, set up the date strings for the output file lines
 		InputFileNameParts = InputFileName.split('-')
 		InputYear = int(InputFileNameParts[1])
@@ -445,13 +513,13 @@ def ShapeAllScaledData():
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 10:
-						WriteOutput = False
+						# WriteOutput = False
 						NumberOfInputLinesPerDay = 40
 						NumberOfInputLinesTo11AM = 28
 						CheckHour = 11
 						CheckMinute = 0
 					elif IntervalQuantity == 15:
-						WriteOutput = False
+						# WriteOutput = False
 						NumberOfInputLinesPerDay = 27
 						NumberOfInputLinesTo11AM = 19
 						CheckHour = 11

@@ -405,6 +405,16 @@ def DateIsAlreadyFiltered(date):
             break
     return returnValue
 
+def DateIsAlreadyChecked(date):
+    returnValue = False
+    FileNameDateFormat = f"{date.year:4}-{date.month:02}-{date.day:02}.csv"
+    CheckedDataFileDirectoryList = os.listdir(SharedVars.CheckedDataPath)
+    for CheckedDataFileName in CheckedDataFileDirectoryList:
+        if FileNameDateFormat == CheckedDataFileName[-14:]:
+            returnValue = True
+            break
+    return returnValue
+
 def EmptyTextWindow():
 	SharedVars.GuiTextWindow.delete('1.0', 'end')
 

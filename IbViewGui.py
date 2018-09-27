@@ -23,23 +23,25 @@ def PrepareGui():
 	SharedVars.GuiLastLoggedDateLabel.grid(column=0, row=1)
 	SharedVars.GuiLastSiftedDateLabel.grid(column=0, row=2)
 	SharedVars.GuiLastFilteredDateLabel.grid(column=0, row=3)
-	SharedVars.GuiLastScaledDateLabel.grid(column=0, row=4)
-	SharedVars.GuiLastShapedDateLabel.grid(column=0, row=5)
-	SharedVars.GuiDevelopmentMessageLabel.grid(column=0, row=6)
+	SharedVars.GuiLastCheckedDateLabel.grid(column=0, row=4)
+	SharedVars.GuiLastScaledDateLabel.grid(column=0, row=5)
+	SharedVars.GuiLastShapedDateLabel.grid(column=0, row=6)
+	SharedVars.GuiDevelopmentMessageLabel.grid(column=0, row=7)
 
 	# Buttons
 	SharedVars.GuiSiftButton.grid(column=1, row=2)
 	SharedVars.GuiFilterButton.grid(column=1, row=3)
-	SharedVars.GuiScaleButton.grid(column=1, row=4)
-	SharedVars.GuiShapeButton.grid(column=1, row=5)
-	SharedVars.GuiExitButton.grid(column=3, row=6)
+	SharedVars.GuiCheckButton.grid(column=1, row=4)
+	SharedVars.GuiScaleButton.grid(column=1, row=5)
+	SharedVars.GuiShapeButton.grid(column=1, row=6)
+	SharedVars.GuiExitButton.grid(column=3, row=7)
 
 
-	SharedVars.GuiRefreshWheelLabel.grid(column=2, row=6)
-	SharedVars.GuiDevelopmentMessageLabel.grid(column=0, row=6)
-	SharedVars.GuiExitButton.grid(column=3, row=6)
+	SharedVars.GuiRefreshWheelLabel.grid(column=2, row=7)
+	SharedVars.GuiDevelopmentMessageLabel.grid(column=0, row=7)
+	SharedVars.GuiExitButton.grid(column=3, row=7)
 
-	SharedVars.GuiTextWindow.grid(column=2, row=0, columnspan=2, rowspan=6)
+	SharedVars.GuiTextWindow.grid(column=2, row=0, columnspan=2, rowspan=7)
 	SharedVars.GuiTextWindowVerticalScrollBar.place
 	SharedVars.GuiTextWindow.insert(END, 'Hello, world.')
 	SharedVars.GuiTextWindow.insert(END, '\nI say! Hello, world.')
@@ -98,6 +100,26 @@ def Filter():
 		FilterDate += datetime.timedelta(days=1)
 	SharedVars.GuiLastFilteredDateLabel.configure(text = f'Last filtered date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastFilteredDate)}')
 	IbViewUtilities.AddLineToTextWindow('Filtering is finished')
+	SharedVars.GuiWindow.update()
+
+def Check():
+	IbViewUtilities.EmptyTextWindow()
+	SetLastValidDataDate()
+	CheckDate = SharedVars.FirstValidDataDate
+	while CheckDate <= SharedVars.LastValidDataDate:
+		if IbViewUtilities.DateIsATradingDay(CheckDate):
+			if IbViewUtilities.DateIsAlreadyChecked(CheckDate):
+				IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)} has already been Checked')
+			else:
+				IbViewUtilities.AddLineToTextWindow(f'Checking {IbViewUtilities.FormatDateShortMonth(CheckDate)}')
+				IbViewStorage.CheckUnderlyingDate(CheckDate)
+				SharedVars.LastCheckedDate = CheckDate
+		else:
+			IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)} is not a trading day')
+		SharedVars.GuiWindow.update()
+		CheckDate += datetime.timedelta(days=1)
+	SharedVars.GuiLastCheckedDateLabel.configure(text = f'Last Checked date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastCheckedDate)}')
+	IbViewUtilities.AddLineToTextWindow('Checking is finished')
 	SharedVars.GuiWindow.update()
 
 def ScaleAllIntervals():
