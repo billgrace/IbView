@@ -273,7 +273,7 @@ def CheckUnderlyingDate(date):
 		DifferenceIsAcceptable = False
 	if not DifferenceIsAcceptable:
 		# Announce excessive difference to GUI
-		IbViewUtilities.AddLineToTextWindow(DifferenceString)
+		IbViewUtilities.AddLineToTextWindow('\n\n' + IbViewUtilities.FormatDateShortMonth(date) + ' - ' + DifferenceString + '\n')
 	else:
 		# Copy acceptable date file to 'Checked' directory
 		InputFile = open(SharedVars.FilteredDataPath + '/' + FileName, 'rt')

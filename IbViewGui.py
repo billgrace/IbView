@@ -109,17 +109,17 @@ def Check():
 	while CheckDate <= SharedVars.LastValidDataDate:
 		if IbViewUtilities.DateIsATradingDay(CheckDate):
 			if IbViewUtilities.DateIsAlreadyChecked(CheckDate):
-				IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)} has already been Checked')
+				IbViewUtilities.AddTextToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)}')
 			else:
-				IbViewUtilities.AddLineToTextWindow(f'Checking {IbViewUtilities.FormatDateShortMonth(CheckDate)}')
+				IbViewUtilities.AddTextToTextWindow(f'Checking {IbViewUtilities.FormatDateShortMonth(CheckDate)}')
 				IbViewStorage.CheckUnderlyingDate(CheckDate)
 				SharedVars.LastCheckedDate = CheckDate
 		else:
-			IbViewUtilities.AddLineToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)} is not a trading day')
+			IbViewUtilities.AddTextToTextWindow(f'{IbViewUtilities.FormatDateShortMonth(CheckDate)} is not a trading day')
 		SharedVars.GuiWindow.update()
 		CheckDate += datetime.timedelta(days=1)
 	SharedVars.GuiLastCheckedDateLabel.configure(text = f'Last Checked date: {IbViewUtilities.FormatDateShortMonth(SharedVars.LastCheckedDate)}')
-	IbViewUtilities.AddLineToTextWindow('Checking is finished')
+	IbViewUtilities.AddLineToTextWindow('\n\nChecking is finished')
 	SharedVars.GuiWindow.update()
 
 def ScaleAllIntervals():

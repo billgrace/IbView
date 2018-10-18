@@ -422,6 +422,10 @@ def AddLineToTextWindow(text):
 	SharedVars.GuiTextWindow.insert('end', text + '\n')
 	SharedVars.GuiTextWindow.see('end')
 
+def AddTextToTextWindow(text):
+	SharedVars.GuiTextWindow.insert('end', text + ' ')
+	SharedVars.GuiTextWindow.see('end')
+
 def ErrorExit(message):
 	print(message)
 	exit()
